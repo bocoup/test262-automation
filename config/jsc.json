@@ -1,0 +1,10 @@
+{
+  "license": "Apple",
+  "targetGit": "git@github.com:nomadtechie/test262.git",
+  "targetDirectory": "test262/implementation-contributed/jsc",
+  "targetShaRevision": "a8f7012587250b32ffb43a3cbd8da8a9f9d1565e",
+  "sourceGit": "git@github.com:nomadtechie/webkit.git",
+  "sourceDirectory": "webkit/JSTests",
+  "sourceShaRevision": "a7edaf986c5d81fb1d289cd2fa187c27a89cd1d6",
+  "sourceExcludes": [ "mozilla/" , "ChakraCore/", "ChangeLog", "*.yaml" ]
+}
