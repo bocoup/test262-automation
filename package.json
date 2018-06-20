@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/bocoup/test262-automation#readme",
   "dependencies": {
-    "axios": "^0.18.0",
+    "isomorphic-fetch": "^2.2.1",
     "jest": "^23.1.0",
     "yargs": "^11.0.0"
   }
