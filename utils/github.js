@@ -29,8 +29,8 @@ class GitHub {
      POST /repos/:owner/:repo/pulls
      https://developer.github.com/v3/pulls/#create-a-pull-request
   */
-  openPullRequest(branchName, title, body) {
-    return this.request({
+  openPullRequest({branchName, title, body}) {
+    return this.postRequest({
       path: `/repos/${T262_GH_ORG}/${T262_GH_REPO_NAME}/pulls`,
       body: {
         title,
@@ -48,15 +48,15 @@ class GitHub {
      POST /repos/:owner/:repo/issues/:number/labels
      https://developer.github.com/v3/issues/labels/#add-labels-to-an-issue
   */
-  addLabel(number, label) {
-    return this.request({
+  addLabel({number, labels}) {
+    return this.postRequest({
       path: `/repos/${T262_GH_ORG}/${T262_GH_REPO_NAME}/issues/${number}/labels`,
-      body: [label]
+      body: labels
     });
   }
 
 
-  async request({path, body}) {
+  async postRequest({path, body}) {
     let headers = {
       Authorization: `token ${this[TOKEN_SYM]}`,
       Accept: 'application/vnd.github.v3+json',
