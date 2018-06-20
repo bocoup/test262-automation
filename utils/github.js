@@ -11,6 +11,10 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const FETCH_SYM = Symbol('fetch');
 const TOKEN_SYM = Symbol('token');
 
+/**
+   The `GitHub` class is a simple wrapper around the github api that
+   is pre-configured to work with the test262 github repo.
+ */
 class GitHub {
 
   constructor(githubToken=GITHUB_TOKEN, fetch=isomorphicFetch) {
