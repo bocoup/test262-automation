@@ -1,15 +1,12 @@
 const isomorphicFetch = require('isomorphic-fetch');
 const assert = require('assert');
-const config = require('../config/github.json')
 
-const T262_GH_ORG = process.env.T262_GH_ORG || config.t252GithubOrg;
-const T262_GH_REPO_NAME = process.env.T262_GH_REPO_NAME || config.t252GithubRepoName;
-const T262_BASE_BRANCH = process.env.T262_BASE_BRANCH || config.t252BaseBranch;
-const GITHUB_USERNAME = process.env.GITHUB_USERNAME || config.t252GithubUsername;
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-
-const FETCH_SYM = Symbol('fetch');
-const TOKEN_SYM = Symbol('token');
+const T262_GH_ORG = Symbol('T262_GH_ORG');
+const T262_GH_REPO_NAME = Symbol('T262_GH_REPO_NAME');
+const T262_BASE_BRANCH = Symbol('T262_BASE_BRANCH');
+const GITHUB_USERNAME = Symbol('GITHUB_USERNAME');
+const GITHUB_TOKEN = Symbol('GITHUB_TOKEN');
+const FETCH = Symbol('FETCH');
 
 /**
    The `GitHub` class is a simple wrapper around the github api that
@@ -17,10 +14,16 @@ const TOKEN_SYM = Symbol('token');
  */
 class GitHub {
 
-  constructor(githubToken=GITHUB_TOKEN, fetch=isomorphicFetch) {
-    this[FETCH_SYM] = fetch;
-    this[TOKEN_SYM] = githubToken;
-    assert(this[TOKEN_SYM], 'No github token found. Please set the GITHUB_TOKEN enviroment variable before attempting to open a pull request.');
+  constructor(config, fetch=isomorphicFetch) {
+
+    this[T262_GH_ORG] = process.env.T262_GH_ORG || config.t252GithubOrg;
+    this[T262_GH_REPO_NAME] = process.env.T262_GH_REPO_NAME || config.t252GithubRepoName;
+    this[T262_BASE_BRANCH] = process.env.T262_BASE_BRANCH || config.t252BaseBranch;
+    this[GITHUB_USERNAME] = process.env.GITHUB_USERNAME || config.t252GithubUsername;
+    this[GITHUB_TOKEN] = process.env.GITHUB_TOKEN || config.githubToken;
+
+    this[FETCH] = fetch;
+    assert(this[GITHUB_TOKEN], 'No github token found. Please set the GITHUB_TOKEN enviroment variable before attempting to open a pull request.');
   }
 
   /**
@@ -31,12 +34,12 @@ class GitHub {
   */
   openPullRequest({branchName, title, body}) {
     return this.postRequest({
-      path: `/repos/${T262_GH_ORG}/${T262_GH_REPO_NAME}/pulls`,
+      path: `/repos/${this[T262_GH_ORG]}/${this[T262_GH_REPO_NAME]}/pulls`,
       body: {
         title,
         body,
-        head: `${GITHUB_USERNAME}:${branchName}`,
-        base: T262_BASE_BRANCH,
+        head: `${this[GITHUB_USERNAME]}:${branchName}`,
+        base: this[T262_BASE_BRANCH],
         maintainer_can_modify: true,
       }
     });
@@ -50,7 +53,7 @@ class GitHub {
   */
   addLabel({number, labels}) {
     return this.postRequest({
-      path: `/repos/${T262_GH_ORG}/${T262_GH_REPO_NAME}/issues/${number}/labels`,
+      path: `/repos/${this[T262_GH_ORG]}/${this[T262_GH_REPO_NAME]}/issues/${number}/labels`,
       body: labels
     });
   }
@@ -58,12 +61,12 @@ class GitHub {
 
   async postRequest({path, body}) {
     let headers = {
-      Authorization: `token ${this[TOKEN_SYM]}`,
+      Authorization: `token ${this[GITHUB_TOKEN]}`,
       Accept: 'application/vnd.github.v3+json',
       'content-type': 'application/json'
     };
 
-    let response = await this[FETCH_SYM]('https://api.github.com' + path, {
+    let response = await this[FETCH]('https://api.github.com' + path, {
       body: JSON.stringify(body),
       headers,
       method: 'POST'

@@ -12,16 +12,23 @@ describe('Github Util', function() {
     },
     method: 'POST',
   });
+  const config = {
+    githubToken: token,
+    t252GithubOrg: 'tc39',
+    t252GithubRepoName: 'test262',
+    t252BaseBranch: 'master',
+    t252GithubUsername: 'test262-automation',
+  }
 
   let fetch, gitHub
   beforeEach(() => {
     fetch = jest.fn(() => Promise.resolve({status: 200, json: () => ({api: 'response'})}));
-    gitHub = new GitHub(token, fetch);
+    gitHub = new GitHub(config, fetch);
   });
 
   test('throws an assertion if there is no github token', () => {
     expect(() => {
-      new GitHub(null);
+      new GitHub({});
     }).toThrow('No github token found');
   });
 
@@ -37,7 +44,7 @@ describe('Github Util', function() {
         status: 422,
         json: () => Promise.resolve({ message: 'Validation Failed' })
       }));
-      let gitHub = new GitHub(token, fetch);
+      let gitHub = new GitHub(config, fetch);
 
       return expect(gitHub.postRequest({})).rejects.toEqual({
         message: 'Validation Failed'
