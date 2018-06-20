@@ -1,4 +1,6 @@
-const GitHub = require('./github');
+const rewire = require('rewire');
+const GitHub = rewire('./github');
+
 
 describe('Github Util', function() {
 
@@ -23,6 +25,8 @@ describe('Github Util', function() {
   let fetch, gitHub
   beforeEach(() => {
     fetch = jest.fn(() => Promise.resolve({status: 200, json: () => ({api: 'response'})}));
+    GitHub.__set__('fetch', fetch);
+
     gitHub = new GitHub(config, fetch);
   });
 
@@ -44,6 +48,7 @@ describe('Github Util', function() {
         status: 422,
         json: () => Promise.resolve({ message: 'Validation Failed' })
       }));
+      GitHub.__set__('fetch', fetch);
       let gitHub = new GitHub(config, fetch);
 
       return expect(gitHub.postRequest({})).rejects.toEqual({

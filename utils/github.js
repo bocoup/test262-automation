@@ -1,4 +1,4 @@
-const isomorphicFetch = require('isomorphic-fetch');
+let fetch = require('isomorphic-fetch');
 const assert = require('assert');
 
 const T262_GH_ORG = Symbol('T262_GH_ORG');
@@ -6,7 +6,6 @@ const T262_GH_REPO_NAME = Symbol('T262_GH_REPO_NAME');
 const T262_BASE_BRANCH = Symbol('T262_BASE_BRANCH');
 const GITHUB_USERNAME = Symbol('GITHUB_USERNAME');
 const GITHUB_TOKEN = Symbol('GITHUB_TOKEN');
-const FETCH = Symbol('FETCH');
 
 /**
    The `GitHub` class is a simple wrapper around the github api that
@@ -14,7 +13,7 @@ const FETCH = Symbol('FETCH');
  */
 class GitHub {
 
-  constructor(config, fetch=isomorphicFetch) {
+  constructor(config) {
 
     this[T262_GH_ORG] = config.t252GithubOrg;
     this[T262_GH_REPO_NAME] = config.t252GithubRepoName;
@@ -22,7 +21,6 @@ class GitHub {
     this[GITHUB_USERNAME] = config.t252GithubUsername;
     this[GITHUB_TOKEN] = config.githubToken;
 
-    this[FETCH] = fetch;
     assert(this[GITHUB_TOKEN], 'No github token found. Please set the GITHUB_TOKEN enviroment variable before attempting to open a pull request.');
   }
 
@@ -66,7 +64,7 @@ class GitHub {
       'content-type': 'application/json'
     };
 
-    let response = await this[FETCH]('https://api.github.com' + path, {
+    let response = await fetch('https://api.github.com' + path, {
       body: JSON.stringify(body),
       headers,
       method: 'POST'
