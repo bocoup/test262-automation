@@ -1,10 +1,11 @@
 const isomorphicFetch = require('isomorphic-fetch');
 const assert = require('assert');
+const config = require('../config/github.json')
 
-const T262_GH_ORG = process.env.T262_GH_ORG || 'tc39';
-const T262_GH_REPO_NAME = process.env.T262_GH_REPO_NAME || 'test262';
-const T262_BASE_BRANCH = process.env.T262_BASE_BRANCH || 'master';
-const GITHUB_USERNAME = process.env.GITHUB_USERNAME || 'test262-automation';
+const T262_GH_ORG = process.env.T262_GH_ORG || config.t252GithubOrg;
+const T262_GH_REPO_NAME = process.env.T262_GH_REPO_NAME || config.t252GithubRepoName;
+const T262_BASE_BRANCH = process.env.T262_BASE_BRANCH || config.t252BaseBranch;
+const GITHUB_USERNAME = process.env.GITHUB_USERNAME || config.t252GithubUsername;
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
 const FETCH_SYM = Symbol('fetch');
