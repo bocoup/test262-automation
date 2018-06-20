@@ -58,13 +58,13 @@ class GitHub {
 
 
   async postRequest({path, body}) {
-    let headers = {
+    const headers = {
       Authorization: `token ${this[GITHUB_TOKEN]}`,
       Accept: 'application/vnd.github.v3+json',
       'content-type': 'application/json'
     };
 
-    let response = await fetch('https://api.github.com' + path, {
+    const response = await fetch('https://api.github.com' + path, {
       body: JSON.stringify(body),
       headers,
       method: 'POST'
@@ -76,7 +76,7 @@ class GitHub {
       // The Github API is pretty good about always returning json
       // error messages. Although it might be possible for a 500 error
       // not to return json...
-      let json = await response.json();
+      const json = await response.json();
       return Promise.reject(json);
     }
   }
