@@ -2,19 +2,20 @@ const GitHub = require('./github');
 
 describe('Github Util', function() {
 
-  let token, fetch, mockRequestConfig, gitHub;
+  const token = 'secret-github-token';
+  const mockRequestConfig = (body) => ({
+    body: JSON.stringify(body),
+    headers: {
+      Accept: 'application/vnd.github.v3+json',
+      Authorization: `token ${token}`,
+      'content-type': 'application/json',
+    },
+    method: 'POST',
+  });
+
+  let fetch, gitHub
   beforeEach(() => {
-    token = 'secret-github-token';
     fetch = jest.fn(() => Promise.resolve({status: 200, json: () => ({api: 'response'})}));
-    mockRequestConfig = (body) => ({
-      body: JSON.stringify(body),
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
-        Authorization: `token ${token}`,
-        'content-type': 'application/json',
-      },
-      method: 'POST',
-    });
     gitHub = new GitHub(token, fetch);
   });
 
