@@ -16,11 +16,11 @@ class GitHub {
 
   constructor(config, fetch=isomorphicFetch) {
 
-    this[T262_GH_ORG] = process.env.T262_GH_ORG || config.t252GithubOrg;
-    this[T262_GH_REPO_NAME] = process.env.T262_GH_REPO_NAME || config.t252GithubRepoName;
-    this[T262_BASE_BRANCH] = process.env.T262_BASE_BRANCH || config.t252BaseBranch;
-    this[GITHUB_USERNAME] = process.env.GITHUB_USERNAME || config.t252GithubUsername;
-    this[GITHUB_TOKEN] = process.env.GITHUB_TOKEN || config.githubToken;
+    this[T262_GH_ORG] = config.t252GithubOrg;
+    this[T262_GH_REPO_NAME] = config.t252GithubRepoName;
+    this[T262_BASE_BRANCH] = config.t252BaseBranch;
+    this[GITHUB_USERNAME] = config.t252GithubUsername;
+    this[GITHUB_TOKEN] = config.githubToken;
 
     this[FETCH] = fetch;
     assert(this[GITHUB_TOKEN], 'No github token found. Please set the GITHUB_TOKEN enviroment variable before attempting to open a pull request.');
