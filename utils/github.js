@@ -56,7 +56,6 @@ class GitHub {
     });
   }
 
-
   async postRequest({path, body}) {
     const headers = {
       Authorization: `token ${this[GITHUB_TOKEN]}`,
