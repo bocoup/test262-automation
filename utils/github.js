@@ -64,27 +64,28 @@ class GitHub {
     })
   }
 
-  request({method, path, body}) {
+  async request({method, path, body}) {
     let headers = {
       Authorization: `token ${this[TOKEN_SYM]}`,
       Accept: 'application/vnd.github.v3+json',
       'content-type': 'application/json'
     };
 
-    return this[FETCH_SYM]('https://api.github.com' + path, {
+    let response = await this[FETCH_SYM]('https://api.github.com' + path, {
       body: JSON.stringify(body),
       headers,
       method: 'POST'
-    }).then(response => {
-      if (response.status === 200) {
-        return response.json();
-      } else {
-        // Github is pretty good about returning json error
-        // messages. Although it might be possible for a 500 error not
-        // to return json...
-        return response.json().then(json => Promise.reject(json));
-      }
-    });
+    })
+
+    if (response.status === 200) {
+      return response.json();
+    } else {
+      // The Github API is pretty good about always returning json
+      // error messages. Although it might be possible for a 500 error
+      // not to return json...
+      let json = await response.json();
+      return Promise.reject(json)
+    }
   }
 }
 
