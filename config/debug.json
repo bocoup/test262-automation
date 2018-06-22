@@ -1,6 +1,6 @@
 {
-  "t252GithubOrg": "test262-automation",
-  "t252GithubRepoName": "test262",
-  "t252BaseBranch": "master",
-  "t252GithubUsername": "test262-automation"
+  "t262GithubOrg": "test262-automation",
+  "t262GithubRepoName": "test262",
+  "t262BaseBranch": "master",
+  "t262GithubUsername": "test262-automation"
 }
