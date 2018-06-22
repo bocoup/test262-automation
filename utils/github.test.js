@@ -36,10 +36,12 @@ describe('Github Util', () => {
     }).toThrow('No github token found');
   });
 
-  describe('#postRequest', () => {
-    test('resolves with the json returned by github when the status is 200', () => expect(gitHub.postRequest({})).resolves.toEqual({
-      api: 'response',
-    }));
+  describe('#request', function() {
+    test('resolves with the json returned by github when the status is 200', () => {
+      return expect(gitHub.request({})).resolves.toEqual({
+        api: 'response'
+      });
+    });
 
     test('rejects with the json response when the status code is not 200', () => {
       const fetch = jest.fn(() => Promise.resolve({
@@ -49,8 +51,8 @@ describe('Github Util', () => {
       GitHub.__set__('fetch', fetch);
       const gitHub = new GitHub(config, fetch);
 
-      return expect(gitHub.postRequest({})).rejects.toEqual({
-        message: 'Validation Failed',
+      return expect(gitHub.request({})).rejects.toEqual({
+        message: 'Validation Failed'
       });
     });
   });
