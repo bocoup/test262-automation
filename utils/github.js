@@ -31,7 +31,8 @@ class GitHub {
      https://developer.github.com/v3/pulls/#create-a-pull-request
   */
   openPullRequest({branchName, title, body}) {
-    return this.postRequest({
+    return this.request({
+      method: 'POST',
       path: `/repos/${this[T262_GH_ORG]}/${this[T262_GH_REPO_NAME]}/pulls`,
       body: {
         title,
@@ -43,6 +44,23 @@ class GitHub {
     });
   }
 
+  async updatePullRequest({branchName, title, body}) {
+    const head = `${this[GITHUB_USERNAME]}:${branchName}`;
+    const pullRequest = await this.request({      
+      path: `/repos/${this[T262_GH_ORG]}/${this[T262_GH_REPO_NAME]}/pulls?head=${head}`,
+    })[0];
+
+    const number = pullRequest.number;
+    return this.request({
+      method: 'PATCH',
+      path: `/repos/${this[T262_GH_ORG]}/${this[T262_GH_REPO_NAME]}/pulls/${number}`,
+      body: {
+        title,
+        body,
+      }
+    });
+  }
+
   /**
      Adds a label to a GitHub pr (or issue).
 
@@ -50,13 +68,14 @@ class GitHub {
      https://developer.github.com/v3/issues/labels/#add-labels-to-an-issue
   */
   addLabel({number, labels}) {
-    return this.postRequest({
+    return this.request({
+      method: 'POST',
       path: `/repos/${this[T262_GH_ORG]}/${this[T262_GH_REPO_NAME]}/issues/${number}/labels`,
       body: labels
     });
   }
 
-  async postRequest({path, body}) {
+  async request({path, body, method='GET'}) {
     const headers = {
       Authorization: `token ${this[GITHUB_TOKEN]}`,
       Accept: 'application/vnd.github.v3+json',
@@ -66,7 +85,7 @@ class GitHub {
     const response = await fetch('https://api.github.com' + path, {
       body: JSON.stringify(body),
       headers,
-      method: 'POST'
+      method,
     });
 
     if (response.status === 200) {

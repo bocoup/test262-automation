@@ -36,9 +36,9 @@ describe('Github Util', function() {
     }).toThrow('No github token found');
   });
 
-  describe('#postRequest', function() {
+  describe('#request', function() {
     test('resolves with the json returned by github when the status is 200', () => {
-      return expect(gitHub.postRequest({})).resolves.toEqual({
+      return expect(gitHub.request({})).resolves.toEqual({
         api: 'response'
       });
     });
@@ -51,7 +51,7 @@ describe('Github Util', function() {
       GitHub.__set__('fetch', fetch);
       let gitHub = new GitHub(config, fetch);
 
-      return expect(gitHub.postRequest({})).rejects.toEqual({
+      return expect(gitHub.request({})).rejects.toEqual({
         message: 'Validation Failed'
       });
     });
