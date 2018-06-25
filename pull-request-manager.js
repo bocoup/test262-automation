@@ -1,8 +1,8 @@
-
-
 class PullRequestManager {
-  constructor({vendorConfig, git, github}) {
-
+  constructor({config, git, github}) {
+    this.vendorConfig = config
+    this.git = git
+    this.github = github
   }
 
   branchName() {
@@ -60,7 +60,8 @@ class PullRequestManager {
     try {
       return await this.github.openPullRequest(params)
     } catch (e) {
-      if (/A pull request already exists/.match(e.errors[0].message)) {
+      const message = e.errors && e.errors[0] && e.errors[0].message
+      if (/A pull request already exists/.exec(message)) {
         return await this.github.updatePullRequest(params)
       } else {
         throw e;
@@ -69,7 +70,7 @@ class PullRequestManager {
   }
 
   async cleanup() {
-
+    // reset the branch to master?
   }
 }
 
@@ -80,3 +81,4 @@ class PullRequestManager {
 // today handling what happens when a pr is open. Updating the
 // existing pr
 //
+module.exports = PullRequestManager;
