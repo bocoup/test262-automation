@@ -133,11 +133,11 @@ try {
                 targetDiffListObj,
                 sourceDiffListObj,
                 targetAndSourceDiffListObj,
-                sourceRootDir: info.sourceRootDir,
-                targetRootDir: info.targetRootDir
+                targetDirectory: info.targetDirectory,
+                sourceDirectory: info.sourceDirectory
             };
         })
-        .then(({targetDiffListObj ,sourceDiffListObj, targetAndSourceDiffListObj, sourceRootDir, targetRootDir }) => {
+        .then(({targetDiffListObj ,sourceDiffListObj, targetAndSourceDiffListObj, targetDirectory, sourceDirectory }) => {
 
             const fileOutcomeManager = new FileOutcomeManager({
                 targetDiffListObj,
@@ -145,8 +145,8 @@ try {
                 targetAndSourceDiffListObj,
                 fileExporter: new FileExporter({
                     curationLogsPath: '../curation_logs/jsc.json',
-                    sourceRootDir,
-                    targetRootDir
+                    sourceDirectory,
+                    targetDirectory
                 })
             });
 

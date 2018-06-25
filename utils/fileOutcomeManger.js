@@ -136,7 +136,7 @@ class FileOutcomeManager {
         Object.keys(this.targetAndSourceDiffList).forEach((filePath) => {
 
             const renamedFile = get(this.sourceDiffList, filePath, '').split(',')[1];
-            const filePathOptions = this.getFileOutcomes({ filePath, renamedFile });
+            const filePathOptions = this.fileExporter.getFilePathOptions({ filePath, renamedFile });
             const {  baseFilePath, renamedBaseFilePath, sourceFilePath, targetFilePath } = filePathOptions;
 
             const targetStatus = get(this.targetDiffList, targetFilePath, NO_CHANGE);
