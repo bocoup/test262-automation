@@ -254,6 +254,53 @@ class GitUtil {
         });
     }
 
+    log(params) {
+        // TODO handle for if directory does not exist
+        const { options, directory } = params;
+        let diffData = '';
+
+        process.chdir(directory);
+
+        return new Promise((resolve, reject) => {
+            const diff = spawn("git", ["log", ...options]);
+
+            diff.stdout.on("data", data => {
+                diffData += String(data);
+            });
+
+            diff.stderr.on("error", error => {
+                reject(error);
+            });
+
+            diff.on("exit", () => {
+                resolve(diffData);
+            });
+        });
+    }
+
+    // Returns a promise that resolves with true if the file has been
+    // modified since the `commit` or false if it has not. An optional
+    // list of ignoredMaintainers can be provided to ignore commits
+    // from those maintainers.
+    async fileHasBeenModified({
+        since,
+        directory,
+        filename,
+        ignoredMaintainers=[]
+    }) {
+        var history = await this.log({
+          directory,
+          options: ['--format=%cn', `${since}...master`, '--', filename],
+        });
+
+        let maintainers = new Set(history.split('\n').filter(Boolean))
+        ignoredMaintainers.forEach(maintainer => {
+          maintainers.delete(maintainer)
+        });
+
+        return !!maintainers.size
+    }
+
     createReadStream(data) {
         const stream = new Readable({ read() {} });
         stream.push(data);
