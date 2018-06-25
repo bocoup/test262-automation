@@ -11,30 +11,23 @@ class FileExporter {
     constructor(params) {
         this.curationLogsPath = params.curationLogsPath;
         this.modifiedFileTemplatePath = params.modifiedFileTemplatePath;
-        this.sourceRootDir = params.sourceRootDir;
-        this.targetRootDir = params.targetRootDir;
+        this.sourceDirectory = params.sourceDirectory;
+        this.targetDirectory = params.targetDirectory;
     }
 
-    getFilePathOptions(path, renamedPath) {
+    getFilePathOptions({filePath, renamedPath = ''}) {
+        const baseFilePath = this.trimFilePath(filePath);
         return {
-            sourceFilePath: `${this.sourceRootDir}${basePath}`,
-            targetFilePath: `${this.targetRootDir}${basePath}`,
-            baseFilePath: this.trimFilePath(path),
-            renamedBaseFilePath: this.trimFilePath(renamedPath)
+            sourceFilePath: `${this.sourceDirectory}${baseFilePath}`,
+            targetFilePath: `${this.targetDirectory}${baseFilePath}`,
+            renamedBaseFilePath: this.trimFilePath(renamedPath),
+            baseFilePath
         }
     }
 
-    isSourceFilePath(path) {
-        return path.includes(this.sourceRootDir);
-    }
-
-    getFullFilePath(path) {
-        const basePath = this.trimFilePath(path);
-
-    }
-
     trimFilePath(path) {
-        return this.isSourceFilePath(path) ? path.slice(this.sourceRootDir.length, path.length) : path.slice(this.targetRootDir.length, path.length);
+        const isSourceFilePath = path.includes(this.sourceDirectory);
+        return isSourceFilePath ? path.slice(this.sourceDirectory.length, path.length) : path.slice(this.targetDirectory.length, path.length);
     }
 
     async addFilesToDoNotExportList(files) {
@@ -55,9 +48,7 @@ class FileExporter {
 
     async exportAndAppendModifiedSource(files) {
         const template = fsPromises.readFile(this.modifiedFileTemplatePath);
-
     }
-
 }
 
 //
