@@ -1,0 +1,17 @@
+{
+  "license": "Debug",
+  "newBranchNameForMerge": "jsc-debug-auto-export",
+  "targetGit": "git@github.com:test262-automation/mock-test262.git",
+  "targetSubDirectory": "mock-test262/implementation-contributed/javascriptcore",
+  "targetRevisionAtLastExport": "5d3ed44",
+  "targetBranch": "master",
+  "sourceGit": "git@github.com:test262-automation/mock-webkit.git",
+  "sourceSubDirectory": "mock-webkit/JSTests",
+  "sourceRevisionAtLastExport": "06105ac",
+  "sourceBranch": "master",
+  "sourceExcludes": {
+    "foundInFile": ["$vm", "amalsTest"],
+    "TODOS": [ "prefix", "rename to patterns"],
+    "paths": [ "mozilla/**" , "ChakraCore/**",  "ChangeLog", "*.yaml" , "microbenmarks"]
+  }
+}
