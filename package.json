@@ -7,7 +7,7 @@
     "test262-automation": "index.js"
   },
   "scripts": {
-    "test": "echo \"No tests specified yet\" && exit 0",
+    "test": "jest",
     "cron": "./cron.sh"
   },
   "repository": {
@@ -25,6 +25,9 @@
     "make-dir": "^1.3.0",
     "minimatch": "^3.0.4",
     "multimatch": "^2.1.0",
+    "isomorphic-fetch": "^2.2.1",
+    "jest": "^23.1.0",
+    "rewire": "^4.0.1",
     "yargs": "^11.0.0"
   }
 }
