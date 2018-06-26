@@ -4,7 +4,7 @@ module.exports = {
     ADDED: 'A',
     DELETE: 'D',
     MODIFIED: 'M',
-    RENAMED: 'R100', // TODO add tech debt issue for R which is  not 100
+    RENAMED: 'R', // TODO add tech debt issue for R which is  not 100
     NO_CHANGE: 'N', // No change found
     FILE_TYPE_CHANGES: 'T',
   },
@@ -13,27 +13,24 @@ module.exports = {
     DA: 4, // would happen if deleted and then re-added in webkit
     DD: 0,
     DM: 4,
-    DR100: 5,
+    DR: 5,
     DT: 6,
     MA: 3, // would happen if deleted and then re-added in webkit
     MD: 9,
     MM: 3,
-    MR100: 10,
+    MR: 10,
     MT: 11,
 
     // Only changes in source
     NM: 2,
     NA: 12, // meets file export criteria
     ND: 7,
-    NR100: 8,
+    NR: 8,
     NT: 13,
 
     // Only changes in target
     DN: 1,
     MN: 0,
-
-    // edge case bug
-    NN: 'bug',
   },
 
   fileOutcomes: {

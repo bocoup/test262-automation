@@ -12,6 +12,6 @@
   "sourceExcludes": {
     "foundInFile": ["$vm", "amalsTest"],
     "TODOS": [ "prefix", "rename to patterns"],
-    "paths": [ "mozilla/**" , "ChakraCore/**",  "ChangeLog", "*.yaml" , "microbenmarks", "test262/**"]
+    "paths": [ "mozilla/**" , "ChakraCore/**",  "ChangeLog", "*.yaml" , "microbenmarks" ]
   }
 }

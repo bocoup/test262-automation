@@ -125,29 +125,68 @@ class FileOutcomeManager {
     });
   }
 
+  getFileStatus({targetFilePath, sourceFilePath, isSourceFilePath, filePath }) {
+      let targetStatus = get(this.targetDiffList, targetFilePath, NO_CHANGE);
+      let sourceStatus = get(this.sourceDiffList, sourceFilePath, NO_CHANGE).split(',')[0]; // support for renames
+      const sourceAndTargetDiffStatus = get(this.targetAndSourceDiffList, filePath, NO_CHANGE);
+      const isRenamedStatus = (status) => status[0] === RENAMED;
+
+      if(isRenamedStatus(sourceStatus)) {
+        sourceStatus = RENAMED;
+      }
+
+      if (isRenamedStatus(targetStatus)) {
+        targetStatus = RENAMED;
+      }
+
+      if(targetStatus && sourceStatus === NO_CHANGE) {
+        // use the status from the master diff which compares the directories of the target & source repo
+        // list bc change is not reflected in the sha's used for target & source diff lists
+         if(isSourceFilePath) {
+           sourceStatus = sourceAndTargetDiffStatus;
+         } else {
+           targetStatus = sourceAndTargetDiffStatus;
+         }
+      }
+
+      return {
+        sourceStatus,
+        targetStatus
+      }
+  }
+
   getFileOutcomes() {
     Object.keys(this.targetAndSourceDiffList).forEach((filePath) => {
       const renamedFile = get(this.sourceDiffList, filePath, '').split(',')[1];
-      const filePathOptions = this.fileExporter.getFilePathOptions({ filePath, renamedFile });
-      const {
-        baseFilePath, renamedBaseFilePath, sourceFilePath, targetFilePath,
-      } = filePathOptions;
 
-      const targetStatus = get(this.targetDiffList, targetFilePath, NO_CHANGE);
-      const sourceStatus = get(this.sourceDiffList, sourceFilePath, NO_CHANGE).split(',')[0]; // support for renames
+      const {
+        baseFilePath,
+        renamedBaseFilePath,
+        sourceFilePath,
+        targetFilePath,
+        isSourceFilePath
+      } = this.fileExporter.getFilePathOptions({ filePath, renamedFile });
+
+      const {sourceStatus, targetStatus } = this.getFileStatus({ targetFilePath, sourceFilePath, isSourceFilePath, filePath });
+
       const statusScenario = scenarios[`${targetStatus}${sourceStatus}`];
 
       if (this.fileOutcomes[statusScenario]) {
+
         if (renamedFile) {
           const oldAndRenamedFile = `${baseFilePath},${renamedBaseFilePath}`;
+
           this.fileOutcomes[statusScenario].files.push(oldAndRenamedFile);
+
         } else {
+
           this.fileOutcomes[statusScenario].files.push(baseFilePath);
+
         }
-      } else if (statusScenario === 'bug') {
-        console.error('BUG');
       } else {
+
         throw new Error(`UNSUPPORTED_SCENARIO: statusScenario is ${statusScenario} for file ${filePath}`);
+
       }
     });
 

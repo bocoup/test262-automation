@@ -14,6 +14,9 @@ const multimatch = require('multimatch');
 const SOURCE_ERROR_STATUS = ['U', 'X'];
 const TARGET_ERROR_STATUS = ['U', 'X', 'A', 'T', 'R100'];
 
+
+const { fileStatues : { RENAMED } } = require('./constants.js');
+
 class GitUtil {
   constructor(config) {
     this.tempDirPath = null;
@@ -387,8 +390,10 @@ class GitUtil {
         };
 
         if (this.filterDiffList(filterOptions)) {
-          if (status === 'R100') {
-            diffListObj[pathB] = `${status},${pathA}`;
+          if (status[0] === RENAMED) {
+            // old file name as key
+            // state, and new file name as value
+            diffListObj[pathA] = `${status},${pathB}`;
           } else {
             diffListObj[pathA] = status;
           }
