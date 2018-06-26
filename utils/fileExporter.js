@@ -1,9 +1,14 @@
 const { GitUtil } = require('./git.js');
 const fs = require('fs');
-
+const util = require('util');
 const fsPromises = fs.promises;
 const { fileOutcomes } = require('./constants.js');
 const get = require('lodash.get');
+const { targetAndSourceModified, targetModifiedSourceDeleted } = require('../templates/diverged-files.js');
+
+const readFile = util.promisify(fs.readFile);
+const writeFile = util.promisify(fs.writeFile);
+const appendFile = util.promisify(fs.appendFile);
 
 class FileExporter {
   constructor(params) {
@@ -32,22 +37,57 @@ class FileExporter {
     return this.isSourceFilePath(path) ? path.slice(this.sourceDirectory.length, path.length) : path.slice(this.targetDirectory.length, path.length);
   }
 
-  async addFilesToDoNotExportList(files) {
-    const curationLog = JSON.parse(await fsPromises.readFile(this.curationLogsPath));
-
-    curationLog.DO_NOT_EXPORT.push(...files);
+  async readModifiedSourceFile(filePath) {
+    return await readFile(`${this.sourceDirectory}${filePath}`, 'utf8');
   }
 
-  async exportAndOverwrite({ targetRootDir, sourceRootDir, files }) {
-    files.forEach(async (fileToExport) => {
-      const newSource = await fsPromises.readFile(`${sourceRootDir}${fileToExport}`);
+  async updateTargetFile({ newTarget, filePath }) {
+    return await writeFile(`${this.targetDirectory}${filePath}`, newTarget);
+  }
 
-      await fsPromises.writeFile(`${targetRootDir}${fileToExport}`, newSource);
+  async updateFileReferenceInCurationLog({ files, action }) {
+    console.log('files', files);
+    console.log('action', action);
+  }
+
+  async appendToTargetFile({ appendData, filePath }) {
+    return await appendFile(`${this.targetDirectory}${filePath}`, appendData);
+  }
+
+  async addFilesToDoNotExportList(files) {
+    const curationLog = await readFile(this.curationLogsPath);
+    const curationLogData = JSON.parse(curationLog);
+
+    curationLogData.DO_NOT_EXPORT.push(...files);
+
+    await writeFile(this.curationLogsPath, JSON.stringify(curationLogData, null, 2));
+    }
+
+  // TODO maybe use a copy cmd here instead?
+  async exportAndOverwrite(files) {
+    files.forEach(async (filePath) => {
+
+      const newSource = await this.readModifiedSourceFile(filePath);
+
+      await this.updateTargetFile({ filePath, newTarget: newSource });
     });
   }
 
   async exportAndAppendModifiedSource(files) {
-    const template = fsPromises.readFile(this.modifiedFileTemplatePath);
+
+    files.forEach(async (filePath) => {
+      const modifiedSourceContent = await this.readModifiedSourceFile(filePath);
+      const appendData = targetAndSourceModified({modifiedSourceContent, exportTimeDate: 'Jan 1999'});
+
+      await this.appendToTargetFile({ appendData, filePath });
+    });
+
+
+   // const template = fsPromises.readFile(this.modifiedFileTemplatePath);
+  }
+
+  async removeFileReferenceFromCurationLog() {
+
   }
 }
 
