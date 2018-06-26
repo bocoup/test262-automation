@@ -1,4 +1,4 @@
-let fetch = require('isomorphic-fetch');
+const fetch = require('isomorphic-fetch');
 const assert = require('assert');
 
 const T262_GH_ORG = Symbol('T262_GH_ORG');
@@ -12,9 +12,7 @@ const GITHUB_TOKEN = Symbol('GITHUB_TOKEN');
    is pre-configured to work with the test262 github repo.
  */
 class GitHub {
-
   constructor(config) {
-
     this[T262_GH_ORG] = config.t252GithubOrg;
     this[T262_GH_REPO_NAME] = config.t252GithubRepoName;
     this[T262_BASE_BRANCH] = config.t252BaseBranch;
@@ -30,7 +28,7 @@ class GitHub {
      POST /repos/:owner/:repo/pulls
      https://developer.github.com/v3/pulls/#create-a-pull-request
   */
-  openPullRequest({branchName, title, body}) {
+  openPullRequest({ branchName, title, body }) {
     return this.postRequest({
       path: `/repos/${this[T262_GH_ORG]}/${this[T262_GH_REPO_NAME]}/pulls`,
       body: {
@@ -39,7 +37,7 @@ class GitHub {
         head: `${this[GITHUB_USERNAME]}:${branchName}`,
         base: this[T262_BASE_BRANCH],
         maintainer_can_modify: true,
-      }
+      },
     });
   }
 
@@ -49,35 +47,34 @@ class GitHub {
      POST /repos/:owner/:repo/issues/:number/labels
      https://developer.github.com/v3/issues/labels/#add-labels-to-an-issue
   */
-  addLabel({number, labels}) {
+  addLabel({ number, labels }) {
     return this.postRequest({
       path: `/repos/${this[T262_GH_ORG]}/${this[T262_GH_REPO_NAME]}/issues/${number}/labels`,
-      body: labels
+      body: labels,
     });
   }
 
-  async postRequest({path, body}) {
+  async postRequest({ path, body }) {
     const headers = {
       Authorization: `token ${this[GITHUB_TOKEN]}`,
       Accept: 'application/vnd.github.v3+json',
-      'content-type': 'application/json'
+      'content-type': 'application/json',
     };
 
-    const response = await fetch('https://api.github.com' + path, {
+    const response = await fetch(`https://api.github.com${path}`, {
       body: JSON.stringify(body),
       headers,
-      method: 'POST'
+      method: 'POST',
     });
 
     if (response.status === 200) {
       return response.json();
-    } else {
-      // The Github API is pretty good about always returning json
-      // error messages. Although it might be possible for a 500 error
-      // not to return json...
-      const json = await response.json();
-      return Promise.reject(json);
     }
+    // The Github API is pretty good about always returning json
+    // error messages. Although it might be possible for a 500 error
+    // not to return json...
+    const json = await response.json();
+    return Promise.reject(json);
   }
 }
 

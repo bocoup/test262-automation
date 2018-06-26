@@ -1,54 +1,50 @@
-const { GitUtil } = require("./git.js");
-const fs = require("fs");
+const { GitUtil } = require('./git.js');
+const fs = require('fs');
+
 const fsPromises = fs.promises;
-const { fileOutcomes } = require("./constants.js");
-const get = require("lodash.get");
-
-
+const { fileOutcomes } = require('./constants.js');
+const get = require('lodash.get');
 
 class FileExporter {
+  constructor(params) {
+    this.curationLogsPath = params.curationLogsPath;
+    this.modifiedFileTemplatePath = params.modifiedFileTemplatePath;
+    this.sourceDirectory = params.sourceDirectory;
+    this.targetDirectory = params.targetDirectory;
+  }
 
-    constructor(params) {
-        this.curationLogsPath = params.curationLogsPath;
-        this.modifiedFileTemplatePath = params.modifiedFileTemplatePath;
-        this.sourceDirectory = params.sourceDirectory;
-        this.targetDirectory = params.targetDirectory;
-    }
+  getFilePathOptions({ filePath, renamedPath = '' }) {
+    const baseFilePath = this.trimFilePath(filePath);
+    return {
+      sourceFilePath: `${this.sourceDirectory}${baseFilePath}`,
+      targetFilePath: `${this.targetDirectory}${baseFilePath}`,
+      renamedBaseFilePath: this.trimFilePath(renamedPath),
+      baseFilePath,
+    };
+  }
 
-    getFilePathOptions({filePath, renamedPath = ''}) {
-        const baseFilePath = this.trimFilePath(filePath);
-        return {
-            sourceFilePath: `${this.sourceDirectory}${baseFilePath}`,
-            targetFilePath: `${this.targetDirectory}${baseFilePath}`,
-            renamedBaseFilePath: this.trimFilePath(renamedPath),
-            baseFilePath
-        }
-    }
+  trimFilePath(path) {
+    const isSourceFilePath = path.includes(this.sourceDirectory);
+    return isSourceFilePath ? path.slice(this.sourceDirectory.length, path.length) : path.slice(this.targetDirectory.length, path.length);
+  }
 
-    trimFilePath(path) {
-        const isSourceFilePath = path.includes(this.sourceDirectory);
-        return isSourceFilePath ? path.slice(this.sourceDirectory.length, path.length) : path.slice(this.targetDirectory.length, path.length);
-    }
+  async addFilesToDoNotExportList(files) {
+    const curationLog = JSON.parse(await fsPromises.readFile(this.curationLogsPath));
 
-    async addFilesToDoNotExportList(files) {
-        const curationLog = JSON.parse(await fsPromises.readFile(this.curationLogsPath));
+    curationLog.DO_NOT_EXPORT.push(...files);
+  }
 
-        curationLog.DO_NOT_EXPORT.push(...files);
-    }
+  async exportAndOverwrite({ targetRootDir, sourceRootDir, files }) {
+    files.forEach(async (fileToExport) => {
+      const newSource = await fsPromises.readFile(`${sourceRootDir}${fileToExport}`);
 
-    async exportAndOverwrite({ targetRootDir, sourceRootDir, files }) {
+      await fsPromises.writeFile(`${targetRootDir}${fileToExport}`, newSource);
+    });
+  }
 
-        files.forEach(async (fileToExport) => {
-
-            const newSource = await fsPromises.readFile(`${sourceRootDir}${fileToExport}`);
-
-            await fsPromises.writeFile(`${targetRootDir}${fileToExport}`, newSource);
-        });
-    }
-
-    async exportAndAppendModifiedSource(files) {
-        const template = fsPromises.readFile(this.modifiedFileTemplatePath);
-    }
+  async exportAndAppendModifiedSource(files) {
+    const template = fsPromises.readFile(this.modifiedFileTemplatePath);
+  }
 }
 
 //
@@ -194,98 +190,95 @@ class FileExporter {
 //     });
 // }
 
-//start();
+// start();
 
-//filterDifflist1();
+// filterDifflist1();
 
 // REMOVE GLOBAL
 
-this.statusNotFound = "N/A";
+this.statusNotFound = 'N/A';
 
 function getStatus(params) {
-    const { filePath, name } = params;
+  const { filePath, name } = params;
 
-    let status = null;
+  let status = null;
 
-    return new Promise((resolve, reject) => {
-        const read = readline.createInterface({
-            input: fs.createReadStream(filePath, { encoding: "utf8" }),
-            crlfDelay: Infinity
-        });
-
-        read.on("line", line => {
-            console.log("LINE 1", line);
-
-            if (line.split(",")[1] === name) {
-                status = line.split(",")[0];
-                console.info("Got it...status is", status);
-                read.close();
-            }
-        });
-
-        read.on("close", () => {
-            resolve(status || this.statusNotFound);
-        });
+  return new Promise((resolve, reject) => {
+    const read = readline.createInterface({
+      input: fs.createReadStream(filePath, { encoding: 'utf8' }),
+      crlfDelay: Infinity,
     });
+
+    read.on('line', (line) => {
+      console.log('LINE 1', line);
+
+      if (line.split(',')[1] === name) {
+        status = line.split(',')[0];
+        console.info('Got it...status is', status);
+        read.close();
+      }
+    });
+
+    read.on('close', () => {
+      resolve(status || this.statusNotFound);
+    });
+  });
 }
 
 function readDiffLists() {
-    const target =
-        "/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TKx3oPm/targetDiffList.txt";
-    const source =
-        "/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TKx3oPm/sourceDiffList.txt";
-    const combined =
-        "/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TKx3oPm/targetAndSourceDiffList.txt"; // this.targetAndSourceDiffListPath
+  const target = '/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TKx3oPm/targetDiffList.txt';
+  const source = '/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TKx3oPm/sourceDiffList.txt';
+  const combined = '/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TKx3oPm/targetAndSourceDiffList.txt'; // this.targetAndSourceDiffListPath
 
-    return new Promise((resolve, reject) => {
-        const read = readline.createInterface({
-            input: fs.createReadStream(combined, { encoding: "utf8" }),
-            crlfDelay: Infinity
-        });
-
-        read.on("line", async line => {
-            const status = line.split(",")[0];
-            const name = line.split(",")[1];
-
-            console.log("LINE", line);
-            console.log("status", status);
-            console.log("name", name);
-
-            read.pause();
-
-            const targetStatus = await getStatus({
-                filePath: target,
-                name
-            });
-            const sourceStatus = await getStatus({
-                filePath: source,
-                name
-            });
-
-            // get outcome here
-
-            // add to the right queue
-
-            // resume reading
-
-            read.resume();
-        });
-
-        read.on("pause", () => {
-            console.log("PAUSED!!!!!");
-        });
-
-        read.on("close", () => {
-            console.info("DONE queneing exports...");
-            resolve(this.queues);
-        });
+  return new Promise((resolve, reject) => {
+    const read = readline.createInterface({
+      input: fs.createReadStream(combined, { encoding: 'utf8' }),
+      crlfDelay: Infinity,
     });
+
+    read.on('line', async (line) => {
+      const status = line.split(',')[0];
+      const name = line.split(',')[1];
+
+      console.log('LINE', line);
+      console.log('status', status);
+      console.log('name', name);
+
+      read.pause();
+
+      const targetStatus = await getStatus({
+        filePath: target,
+        name,
+      });
+      const sourceStatus = await getStatus({
+        filePath: source,
+        name,
+      });
+
+      // get outcome here
+
+      // add to the right queue
+
+      // resume reading
+
+      read.resume();
+    });
+
+    read.on('pause', () => {
+      console.log('PAUSED!!!!!');
+    });
+
+    read.on('close', () => {
+      console.info('DONE queneing exports...');
+      resolve(this.queues);
+    });
+  });
 }
 
-//readDiffLists();
+// readDiffLists();
 
 module.exports = {
-    FileExporter
+  FileExporter,
 };
 
 // fsPromises.readFile('')
@@ -302,4 +295,4 @@ module.exports = {
 
 // git diff --no-index --name-status /private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TRL43eK/test262 /private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TRL43eK/webkit
 
-//INCOMING excludes
+// INCOMING excludes
