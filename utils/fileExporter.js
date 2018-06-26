@@ -16,6 +16,7 @@ class FileExporter {
   getFilePathOptions({ filePath, renamedPath = '' }) {
     const baseFilePath = this.trimFilePath(filePath);
     return {
+      isSourceFilePath: this.isSourceFilePath(filePath),
       sourceFilePath: `${this.sourceDirectory}${baseFilePath}`,
       targetFilePath: `${this.targetDirectory}${baseFilePath}`,
       renamedBaseFilePath: this.trimFilePath(renamedPath),
@@ -23,9 +24,12 @@ class FileExporter {
     };
   }
 
+  isSourceFilePath(path) {
+    return path.includes(this.sourceDirectory);
+  }
+
   trimFilePath(path) {
-    const isSourceFilePath = path.includes(this.sourceDirectory);
-    return isSourceFilePath ? path.slice(this.sourceDirectory.length, path.length) : path.slice(this.targetDirectory.length, path.length);
+    return this.isSourceFilePath(path) ? path.slice(this.sourceDirectory.length, path.length) : path.slice(this.targetDirectory.length, path.length);
   }
 
   async addFilesToDoNotExportList(files) {
