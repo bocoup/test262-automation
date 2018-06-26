@@ -20,6 +20,8 @@ const config = require(`./config/implementation/${argv.engine}.json`); // TODO a
 
 /* Initialize GitUitl */
 
+const home_directory = process.cwd();
+
 // TODO validate config values b4 init
 const gitUtil = new GitUtil(config);
 
@@ -140,12 +142,15 @@ try {
     .then(({
       targetDiffListObj, sourceDiffListObj, targetAndSourceDiffListObj, targetDirectory, sourceDirectory,
     }) => {
+
+      process.chdir(home_directory);
+
       const fileOutcomeManager = new FileOutcomeManager({
         targetDiffListObj,
         sourceDiffListObj,
         targetAndSourceDiffListObj,
         fileExporter: new FileExporter({
-          curationLogsPath: '../curation_logs/jsc.json',
+          curationLogsPath: './curation_logs/jsc.json',
           sourceDirectory,
           targetDirectory,
         }),

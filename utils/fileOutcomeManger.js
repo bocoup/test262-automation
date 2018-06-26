@@ -106,21 +106,35 @@ class FileOutcomeManager {
   init() {
     this.getFileOutcomes();
 
+    this.startFileExport();
+  }
+
+  startFileExport() {
     Object.keys(this.fileOutcomes).forEach(async (outcome) => {
       const files = this.fileOutcomes[outcome].files;
 
-      switch (fileOutcomes[outcome]) {
-        case [DO_NOT_EXPORT]:
-          break;
+      if(files.length) {
 
-        case [DO_NOT_EXPORT_AND_BLOCK_FUTURE_EXPORTS]:
-          await this.fileExporter.addFilesToDoNotExportList(files);
+        switch (parseInt(outcome)) {
 
-        case [EXPORT_AND_OVERWRITE_PREVIOUS_VERSION]:
-          await this.fileExporter.exportAndOverwrite(files);
+          case DO_NOT_EXPORT:
+            return await this.fileExporter.updateFileReferenceInCurationLog({ files, action: 'DELETED'});
 
-        case [APPEND_MODIFIED_TARGET_WITH_NOTE_AND_NEW_SOURCE]:
-          await this.fileExporter.exportAndAppendModifiedSource(files);
+          case DO_NOT_EXPORT_AND_BLOCK_FUTURE_EXPORTS:
+            return await this.fileExporter.addFilesToDoNotExportList(files);
+
+          case EXPORT_AND_OVERWRITE_PREVIOUS_VERSION:
+            return await this.fileExporter.exportAndOverwrite(files);
+
+          case APPEND_MODIFIED_TARGET_WITH_NOTE_AND_NEW_SOURCE:
+            return this.fileExporter.exportAndAppendModifiedSource(files);
+
+          case RE_EXPORT_SOURCE_WITH_NOTE_ON_PREVIOUS_TARGET_DELETION:
+           // return this.fileExporter.exportModifiedSourceWithNoteOnTargetDeletion();
+
+          default:
+           // throw new Error('NO OUTCOME FOUND');
+        }
       }
     });
   }
@@ -190,6 +204,7 @@ class FileOutcomeManager {
       }
     });
 
+    console.info('fileOutcomes: ', this.fileOutcomes);
     return this.fileOutcomes;
   }
 }
