@@ -3,5 +3,5 @@
   "t262GithubRepoName": "test262",
   "t262BaseBranch": "master",
   "t262GithubUsername": "test262-automation",
-  "t262GitRemote": "git@github.com:test262-automation/test262.git"
+  "t262GitRemote": "git@github.com:test262-automation/mock-test262.git"
 }
