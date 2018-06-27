@@ -64,7 +64,7 @@
 
 #### Managing Changes to Test Dependency Files:
 
-- For now, I am not considering some additional scenarios around what happens if/when test dependencies change.
+- For now, I am not considering some additional STATUS_SCENARIOS around what happens if/when test dependencies change.
 If and when dependencies change for a set of already curated tests or tests which are partially curated, its important that we preserve coverage while curating tests, and we have to come up with a sane way to do that.
 
 - Handling changes to excludes list and ....?

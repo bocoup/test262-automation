@@ -2,5 +2,6 @@
   "t262GithubOrg": "test262-automation",
   "t262GithubRepoName": "test262",
   "t262BaseBranch": "master",
-  "t262GithubUsername": "test262-automation"
+  "t262GithubUsername": "test262-automation",
+  "t262GitRemote": "git@github.com:test262-automation/test262.git"
 }

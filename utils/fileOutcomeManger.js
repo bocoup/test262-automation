@@ -1,5 +1,5 @@
 const {
-  fileOutcomes, fileStatues, scenarios, exportActions,
+  FILE_OUTCOMES, FILE_STATUSES, STATUS_SCENARIOS, EXPORT_ACTIONS,
 } = require('./constants.js');
 const get = require('lodash.get');
 const { FileExporter } = require('./fileExporter.js');
@@ -10,7 +10,7 @@ const {
   DELETE,
   RENAMED,
   NO_CHANGE,
-} = fileStatues;
+} = FILE_STATUSES;
 
 const {
   DO_NOT_EXPORT,
@@ -27,15 +27,13 @@ const {
   UPDATE_EXTENSION_ON_MODIFIED_TARGET_FILE_WITH_NOTE_ON_EXTENSION_CHANGE,
   EXPORT_FILE,
   UPDATE_EXTENSION_ON_TARGET_FILE,
-} = fileOutcomes;
+} = FILE_OUTCOMES;
 
 const {
   ADD_TO_DO_NOT_EXPORT_LIST,
   UPDATE_REFERENCE_IN_DO_NOT_EXPORT_LIST,
   REMOVE_FROM_DO_NOT_EXPORT_LIST,
-  OVERWRITE_FILE,
-
-} = exportActions;
+} = EXPORT_ACTIONS;
 
 class FileOutcomeManager {
   constructor(params) {
@@ -103,35 +101,46 @@ class FileOutcomeManager {
     };
   }
 
-  init() {
+  async init() {
     this.getFileOutcomes();
 
-    this.startFileExport();
+    await this.startFileExport();
   }
 
-  startFileExport() {
-    Object.keys(this.fileOutcomes).forEach(async (outcome) => {
+  async startFileExport() {
+    return Object.keys(this.fileOutcomes).reduce(async (promise ,outcome) => {
+      await promise;
       const files = this.fileOutcomes[outcome].files;
 
-      if(files.length) {
-
+      if (files.length) {
         switch (parseInt(outcome)) {
-
           case DO_NOT_EXPORT:
-            return await this.fileExporter.updateFileReferenceInCurationLog({ files, action: 'DELETED'});
+            return await this.fileExporter.updateFileReferenceInCurationLog({files, outcome });
 
           case DO_NOT_EXPORT_AND_BLOCK_FUTURE_EXPORTS:
-            return await this.fileExporter.addFilesToDoNotExportList(files);
+            return await this.fileExporter.addFilesToDoNotExportList({files, outcome });
 
           case EXPORT_AND_OVERWRITE_PREVIOUS_VERSION:
-            return await this.fileExporter.exportAndOverwrite(files);
+            return await this.fileExporter.exportAndOverwrite({ files, outcome });
 
           case APPEND_MODIFIED_TARGET_WITH_NOTE_AND_NEW_SOURCE:
-            return this.fileExporter.exportAndAppendModifiedSource(files);
+            return await this.fileExporter.exportAndAppendModifiedSource({files, outcome });
 
           case RE_EXPORT_SOURCE_WITH_NOTE_ON_PREVIOUS_TARGET_DELETION:
-           // return this.fileExporter.exportModifiedSourceWithNoteOnTargetDeletion();
+            return await this.fileExporter.exportModifiedSourceWithNoteOnTargetDeletion({files, outcome });
 
+          case DELETE_TARGET_FILE:
+            return await this.fileExporter.deleteTargetFile({ files, outcome });
+
+          case RENAME_TARGET_FILE:
+            return await this.fileExporter.renameTargetFile({ files, outcome });
+
+          case APPEND_MODIFIED_TARGET_WITH_NOTE_ON_SOURCE_DELETION:
+            return await this.fileExporter.deleteModifiedTargetWithNoteOnDeletion({ files, outcome });
+          case RENAME_MODIFIED_TARGET_FILE_WITH_NOTE_ON_RENAME:
+            return await this.fileExporter.renameModifiedTargetWithNoteOnDeletion({ files, outcome });
+          case EXPORT_FILE:
+            return await this.fileExporter.exportFile({ files, outcome });
           default:
            // throw new Error('NO OUTCOME FOUND');
         }
@@ -139,72 +148,66 @@ class FileOutcomeManager {
     });
   }
 
-  getFileStatus({targetFilePath, sourceFilePath, isSourceFilePath, filePath }) {
-      let targetStatus = get(this.targetDiffList, targetFilePath, NO_CHANGE);
-      let sourceStatus = get(this.sourceDiffList, sourceFilePath, NO_CHANGE).split(',')[0]; // support for renames
-      const sourceAndTargetDiffStatus = get(this.targetAndSourceDiffList, filePath, NO_CHANGE);
-      const isRenamedStatus = (status) => status[0] === RENAMED;
+  getFileStatus({
+    targetFilePath, sourceFilePath, isSourceFilePath, filePath,
+  }) {
+    let targetStatus = get(this.targetDiffList, targetFilePath, NO_CHANGE);
+    let sourceStatus = get(this.sourceDiffList, sourceFilePath, NO_CHANGE).split(',')[0]; // support for renames
+    const sourceAndTargetDiffStatus = get(this.targetAndSourceDiffList, filePath, NO_CHANGE);
+    const isRenamedStatus = status => status[0] === RENAMED;
 
-      if(isRenamedStatus(sourceStatus)) {
-        sourceStatus = RENAMED;
-      }
+    if (isRenamedStatus(sourceStatus)) {
+      sourceStatus = RENAMED;
+    }
 
-      if (isRenamedStatus(targetStatus)) {
-        targetStatus = RENAMED;
-      }
+    if (isRenamedStatus(targetStatus)) {
+      targetStatus = RENAMED;
+    }
 
-      if(targetStatus && sourceStatus === NO_CHANGE) {
-        // use the status from the master diff which compares the directories of the target & source repo
-        // list bc change is not reflected in the sha's used for target & source diff lists
-         if(isSourceFilePath) {
-           sourceStatus = sourceAndTargetDiffStatus;
-         } else {
-           targetStatus = sourceAndTargetDiffStatus;
-         }
+    if ((targetStatus === NO_CHANGE) && (sourceStatus === NO_CHANGE)) {
+      // use the status from the master diff which compares the directories of the target & source repo
+      // list bc change is not reflected in the sha's used for target & source diff lists
+      if (isSourceFilePath) {
+        sourceStatus = sourceAndTargetDiffStatus;
+      } else {
+        targetStatus = sourceAndTargetDiffStatus;
       }
+    }
 
-      return {
-        sourceStatus,
-        targetStatus
-      }
+    return {
+      sourceStatus,
+      targetStatus,
+    };
   }
 
   getFileOutcomes() {
     Object.keys(this.targetAndSourceDiffList).forEach((filePath) => {
-      const renamedFile = get(this.sourceDiffList, filePath, '').split(',')[1];
-
       const {
         baseFilePath,
         renamedBaseFilePath,
         sourceFilePath,
         targetFilePath,
-        isSourceFilePath
-      } = this.fileExporter.getFilePathOptions({ filePath, renamedFile });
+        isSourceFilePath,
+        renamedFilePath,
+      } = this.fileExporter.getFilePathOptions({ filePath , sourceDiffList: this.sourceDiffList });
 
-      const {sourceStatus, targetStatus } = this.getFileStatus({ targetFilePath, sourceFilePath, isSourceFilePath, filePath });
-
-      const statusScenario = scenarios[`${targetStatus}${sourceStatus}`];
+      const { sourceStatus, targetStatus } = this.getFileStatus({ targetFilePath, sourceFilePath, isSourceFilePath, filePath });
+      const statusScenario = STATUS_SCENARIOS[`${targetStatus}${sourceStatus}`];
 
       if (this.fileOutcomes[statusScenario]) {
-
-        if (renamedFile) {
+        if (renamedFilePath) {
           const oldAndRenamedFile = `${baseFilePath},${renamedBaseFilePath}`;
 
           this.fileOutcomes[statusScenario].files.push(oldAndRenamedFile);
-
         } else {
-
           this.fileOutcomes[statusScenario].files.push(baseFilePath);
-
         }
       } else {
-
         throw new Error(`UNSUPPORTED_SCENARIO: statusScenario is ${statusScenario} for file ${filePath}`);
-
       }
     });
 
-    console.info('fileOutcomes: ', this.fileOutcomes);
+    console.info('FILE_OUTCOMES: ', this.fileOutcomes);
     return this.fileOutcomes;
   }
 }
