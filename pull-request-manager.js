@@ -1,8 +1,9 @@
 class PullRequestManager {
-  constructor({config, git, github}) {
-    this.vendorConfig = config
-    this.git = git
-    this.github = github
+  constructor({config, git, github, reporter}) {
+    this.vendorConfig = config;
+    this.git = git;
+    this.github = github;
+    this.reporter = reporter;
   }
 
   branchName() {
@@ -13,7 +14,13 @@ class PullRequestManager {
     return this.vendorConfig.sourceShaRevision.slice(0, 7);
   }
 
-  async pushPullRequest() {
+  async pushPullRequest({
+    branchName,
+    sourceSha,
+    targetSha,
+    vendor,
+    outcomes
+  }) {
     // on successfully opening the pull request
     // update the sha
 
@@ -26,25 +33,35 @@ class PullRequestManager {
     //   Update pullrequest if one already exists
     // add label
     // cleanup
-    
+
     // do we need the path of the test262 repo?
     // Should that be rolled into the git util?
-    this.git.checkoutBranch(this.branchName());
-    this.git.addAll();
-    // 2 commit
-    this.git.commit(`Sync ${this.vendorConfig.name} changes since ${this.vendorSha()}`);
-    // update git sha
-    this.git.addAll();
-    // 2 commit
-    this.git.commit(`Sync ${this.vendorConfig.name} changes since ${this.vendorSha()}`);
+    // this.git.checkoutBranch(this.branchName());
+    // this.git.addAll();
+    // // 2 commit
+    // this.git.commit(`Sync ${this.vendorConfig.name} changes since ${this.vendorSha()}`);
+    // // update git sha
+    // this.git.addAll();
+    // // 2 commit
+    // this.git.commit(`Sync ${this.vendorConfig.name} changes since ${this.vendorSha()}`);
 
-    this.git.push({
-      branch: this.branchName(),
-      remote: 'origin',
-      force: true,
+    // this.git.push({
+    //   branch: this.branchName(),
+    //   remote: 'origin',
+    //   force: true,
+    // });
+
+
+    let pullRequest = await this.uploadPullRequest({
+      branchName,
+      title: 'Import test changes from jsc',
+      body: this.reporter.generateReport({
+        sourceSha,
+        targetSha,
+        vendor,
+        outcomes
+      })
     });
-
-    let pullRequest = await this.uploadPullRequest();
 
     await this.github.addLabel({
       // Read this value out of the config
