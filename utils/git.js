@@ -12,10 +12,13 @@ const readline = require('readline');
 const multimatch = require('multimatch');
 
 const SOURCE_ERROR_STATUS = ['U', 'X'];
-const TARGET_ERROR_STATUS = ['U', 'X', 'A', 'T', 'R100'];
+const TARGET_ERROR_STATUS = ['U', 'X', 'A', 'T', 'R'];
 
 
-const { fileStatues : { RENAMED } } = require('./constants.js');
+const { FILE_STATUSES: { RENAMED } } = require('./constants.js');
+
+const execCmd = util.promisify(exec);
+
 
 class GitUtil {
   constructor(config) {
@@ -40,6 +43,9 @@ class GitUtil {
     };
     this.sourceGit = config.sourceGit;
     this.sourceBranch = config.sourceBranch;
+
+    this.t262GithubOrg = config.t262GithubOrg;
+    this.t262GitRemote = config.t262GitRemote;
   }
 
   init() {
@@ -74,13 +80,16 @@ class GitUtil {
         dirName: this.sourceDirName,
       });
 
+      const branchPostFix = process.NODE_ENV === 'DEBUG' ? this.timestampForExport : this.targetRevisionAtLastExport;
+      this.targetBranch = `${this.newBranchNameForMerge}-${branchPostFix}`;
+
       await this.checkoutBranch({
-        branch: `${this.newBranchNameForMerge}-${this.timestampForExport}`,
+        branch: `${this.newBranchNameForMerge}-${branchPostFix}`,
         cwd: this.targetRootDir,
       });
 
       await this.checkoutBranch({
-        branch: `${this.newBranchNameForMerge}-${this.timestampForExport}`,
+        branch: `${this.newBranchNameForMerge}-${branchPostFix}`,
         cwd: this.sourceRootDir,
       });
 
@@ -164,7 +173,6 @@ class GitUtil {
   }
 
   async _clean(path) {
-    const execCmd = util.promisify(exec);
 
     await execCmd(`rm -rf ${path}`).then((stdout) => {
       console.info('Removing previous clone...', path);
@@ -287,10 +295,7 @@ class GitUtil {
   // list of ignoredMaintainers can be provided to ignore commits
   // from those maintainers.
   async fileHasBeenModified({
-    since,
-    directory,
-    filename,
-    ignoredMaintainers = [],
+    since, directory, filename, ignoredMaintainers = [],
   }) {
     const history = await this.log({
       directory,
@@ -413,14 +418,33 @@ class GitUtil {
     });
   }
 
-  createDiffListJSON({ outputFile, diffListObj }) {
-    const diffFile = fs.createWriteStream(outputFile);
+  async addTargetChanges() {
+    await execCmd(`git add ${this.targetDirectory}`);
+    console.info('Added changes in target directory...', this.targetDirectory);
+  }
 
-    diffFile.write(diffListObj);
+  async commit() {
+    const commitMessage = `[IMPLEMENTATION-PREFIX] changes from source at sha ${this.sourceRevisionAtLastExport} on ${this.timestampForExport}`;
+    await execCmd(`git commit -m "${commitMessage}"`);
+    console.info('Commited changes with message....', commitMessage);
+  }
 
-    console.debug('##### outputFile', outputFile);
+  async addRemote() {
+    await execCmd(`git remote add ${this.t262GithubOrg} ${this.t262GitRemote}`);
+    console.info('Added remote of remote....', this.t262GitRemote);
+  }
 
-    return outputFile;
+  async pushRemoteBranch() {
+    await execCmd(`git push ${this.t262GithubOrg} ${this.targetBranch}`);
+    console.info('Pushing to remote branch ....', this.targetBranch);
+  }
+
+  async commitAndPushRemoteBranch() {
+    process.chdir(this.targetRootDir);
+    await this.addTargetChanges();
+    await this.commit();
+    await this.addRemote();
+    await this.pushRemoteBranch();
   }
 }
 

@@ -1,32 +1,46 @@
-const { GitUtil } = require('./git.js');
 const fs = require('fs');
 const util = require('util');
+const cpFile = require('cp-file');
+
 const fsPromises = fs.promises;
-const { fileOutcomes } = require('./constants.js');
+const { EXPORT_MESSAGES } = require('./constants.js');
 const get = require('lodash.get');
-const { targetAndSourceModified, targetModifiedSourceDeleted } = require('../templates/diverged-files.js');
+const { GitUtil } = require('./git.js');
+
 
 const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
 const appendFile = util.promisify(fs.appendFile);
+const unlink = util.promisify(fs.unlink);
+const rename = util.promisify(fs.rename);
 
 class FileExporter {
+
   constructor(params) {
     this.curationLogsPath = params.curationLogsPath;
     this.modifiedFileTemplatePath = params.modifiedFileTemplatePath;
     this.sourceDirectory = params.sourceDirectory;
     this.targetDirectory = params.targetDirectory;
+    this.exportDateTime = params.exportDateTime;
   }
 
-  getFilePathOptions({ filePath, renamedPath = '' }) {
+  getFilePathOptions({ filePath, sourceDiffList }) {
     const baseFilePath = this.trimFilePath(filePath);
-    return {
+    const renamedFilePath = get(sourceDiffList, filePath, '').split(',')[1];
+
+    const filePathOptions = {
       isSourceFilePath: this.isSourceFilePath(filePath),
       sourceFilePath: `${this.sourceDirectory}${baseFilePath}`,
       targetFilePath: `${this.targetDirectory}${baseFilePath}`,
-      renamedBaseFilePath: this.trimFilePath(renamedPath),
+      renamedFilePath,
       baseFilePath,
     };
+
+    if(renamedFilePath) {
+      filePathOptions.renamedBaseFilePath = this.trimFilePath(renamedFilePath);
+    }
+
+    return filePathOptions;
   }
 
   isSourceFilePath(path) {
@@ -37,306 +51,112 @@ class FileExporter {
     return this.isSourceFilePath(path) ? path.slice(this.sourceDirectory.length, path.length) : path.slice(this.targetDirectory.length, path.length);
   }
 
-  async readModifiedSourceFile(filePath) {
+  _getExportMessage({ outcome , modifiedSourceContent }) {
+    let exportMessage = EXPORT_MESSAGES[outcome].replace(/{exportDateTime}/, this.exportDateTime);
+    exportMessage =  EXPORT_MESSAGES['TEMPLATE'].replace(/{exportMessage}/, exportMessage);
+
+    if(modifiedSourceContent){
+      exportMessage = `${exportMessage}
+      ${modifiedSourceContent}`
+    }
+
+    return  exportMessage;
+  }
+
+  async _readModifiedSourceFile(filePath) {
     return await readFile(`${this.sourceDirectory}${filePath}`, 'utf8');
   }
 
-  async updateTargetFile({ newTarget, filePath }) {
+  async _updateTargetFile({ newTarget, filePath }) {
     return await writeFile(`${this.targetDirectory}${filePath}`, newTarget);
   }
 
-  async updateFileReferenceInCurationLog({ files, action }) {
-    console.log('files', files);
-    console.log('action', action);
-  }
-
-  async appendToTargetFile({ appendData, filePath }) {
+  async _appendToTargetFile({ appendData, filePath }) {
     return await appendFile(`${this.targetDirectory}${filePath}`, appendData);
   }
 
-  async addFilesToDoNotExportList(files) {
+  async _copySourceFileToTarget(filePath) {
+    // TODO does file already exist there?
+    return await cpFile(`${this.sourceDirectory}${filePath}`, `${this.targetDirectory}${filePath}`, { overwrite: false });
+  }
+
+  async updateFileReferenceInCurationLog({ files, outcome }) {
+    console.log('files', files);
+    console.log('outcome', outcome);
+  }
+
+  async addFilesToDoNotExportList({ files, outcome }) {
+    console.log('DEBUG AMAL', process.cwd())
     const curationLog = await readFile(this.curationLogsPath);
     const curationLogData = JSON.parse(curationLog);
 
     curationLogData.DO_NOT_EXPORT.push(...files);
 
     await writeFile(this.curationLogsPath, JSON.stringify(curationLogData, null, 2));
-    }
+  }
 
   // TODO maybe use a copy cmd here instead?
-  async exportAndOverwrite(files) {
-    files.forEach(async (filePath) => {
+  async exportAndOverwrite({ files, outcome }) {
+    files.forEach(async filePath => {
+      const newSource = await this._readModifiedSourceFile(filePath);
 
-      const newSource = await this.readModifiedSourceFile(filePath);
-
-      await this.updateTargetFile({ filePath, newTarget: newSource });
+      await this._updateTargetFile({ filePath, newTarget: newSource });
     });
   }
 
-  async exportAndAppendModifiedSource(files) {
+  async exportAndAppendModifiedSource({ files, outcome }) {
+    files.forEach(async filePath => {
 
-    files.forEach(async (filePath) => {
-      const modifiedSourceContent = await this.readModifiedSourceFile(filePath);
-      const appendData = targetAndSourceModified({modifiedSourceContent, exportTimeDate: 'Jan 1999'});
+      const modifiedSourceContent = await this._readModifiedSourceFile(filePath);
+      const appendData = this._getExportMessage({ outcome, modifiedSourceContent });
 
-      await this.appendToTargetFile({ appendData, filePath });
+      await this._appendToTargetFile({ appendData, filePath });
     });
-
-
-   // const template = fsPromises.readFile(this.modifiedFileTemplatePath);
   }
 
-  async removeFileReferenceFromCurationLog() {
+  async exportModifiedSourceWithNoteOnTargetDeletion({ files, outcome }) {
+    files.forEach(async filePath => {
+      await this._copySourceFileToTarget(filePath);
+      const appendData = await this._getExportMessage({ outcome });
+      await this._appendToTargetFile({ appendData, filePath })
+    });
+  }
 
+  async deleteTargetFile({ files, outcome }) {
+    files.forEach(async filePath => await unlink(`${this.targetDirectory}${filePath}`));
+  }
+
+  async renameTargetFile({ files, outcome }) {
+    files.forEach(async filePath => {
+      const [ oldFile , newFile ] = filePath.split();
+      await rename(`${this.targetDirectory}${oldFile}`, `${this.targetDirectory}${newFile}`);
+    });
+  }
+
+  async deleteModifiedTargetWithNoteOnDeletion({ files, outcome }) {
+    files.forEach(async filePath => {
+      await unlink(`${this.targetDirectory}${filePath}`);
+      const appendData = await this._getExportMessage({ outcome });
+      await this._appendToTargetFile({appendData, filePath })
+    });
+  }
+
+  async renameModifiedTargetWithNoteOnDeletion({ files, outcome }) {
+    files.forEach(async filePath => {
+      const [ oldFile , newFile ] = filePath.split();
+      await rename(`${this.targetDirectory}${oldFile}`, `${this.targetDirectory}${newFile}`);
+      const appendData = await this._getExportMessage({ outcome });
+      await this._appendToTargetFile({appendData, filePath: newFile })
+    });
+  }
+
+  async exportFile({files, outcome }) {
+    files.forEach(async filePath => {
+      await this._copySourceFileToTarget(filePath);
+    });
   }
 }
-
-//
-// class FileExporter {
-//
-//     constructor(params) {
-//         this.statusNotFound = "N/A";
-//         this.queues = {
-//             unmodifiedFilesToExport: [],
-//             modifiedFilesToExport: [],
-//             addToDoNotExportList: [],
-//             removeFromDoNotExportList: []
-//         };
-//
-//         // this.targetDirectory = params.targetDirectory;
-//         // this.sourceDiffList = params.sourceDiffList;
-//         // this.targetDiffList = params.targetDiffList;
-//         // this.targetAndSourceDiff = params.targetAndSourceDiff;
-//         // target wd
-//         // source wd
-//         // target targetSubDirectory
-//         // source sourceSubDirectory
-//         // sourceExcludes
-//         // init empty report
-//     }
-//
-//     init() {
-//         // if target dir is not there make it
-//         // call compare func
-//         // git diff list of target from last sha to current
-//         // git diff list of source from last sha
-//         // Working with dff lists
-//         // 1) Check out list of files
-//         // 2)
-//         // Actions after comparing diff list
-//         // 1) move the file (but check if its not there first)
-//         // 2) copy modified file, with comment block template
-//         // 3) delete file
-//     }
-//
-//     getTargetDiff() {}
-//
-//     getSourceDiff() {}
-//
-//     getTargetAndSourceLocalDiff() {
-//         GitUtil.diff({
-//             options: [
-//                 "--no-index",
-//                 "--name-status",
-//                 "/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/T4dIPID/test262/vendor/",
-//                 "/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/T4dIPID/webkit/JSTests/"
-//             ]
-//         });
-//     }
-//
-//     reportGenerator() {}
-//
-//     compare() {
-//         // use exportWorkflow.md:13
-//         // states in target
-//         // 1. not edited
-//         // 2.
-//         // new file in source
-//         // deleted file in source
-//         // edited file in source
-//         // renamed file in source
-//     }
-//
-//
-// }
-//
-// // function filterDifflist1() {
-// //
-// //     return new Promise((resolve, reject) => {
-// //
-// //         const read = readline.createInterface({
-// //             input: fs.createReadStream('/Users/amalhussein/oss/test262-automation/_example.txt'),
-// //             crlfDelay: Infinity
-// //         });
-// //
-// //         let csvData = '';
-// //
-// //         read.on('line', (line) => {
-// //
-// //             console.log('IN READ LINE #####');
-// //
-// //             // TODO call new filter function here;
-// //
-// //             const str = String(line);
-// //             const name = str.slice(1, str.length).trim();
-// //             const regex1 = `/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/Td6bZPN/webkit/Tools/Scripts/${config.targetSubDirectory}/**`;
-// //             const regex2 = `/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/Td6bZPN/webkit/Tools/Scripts/${config.sourceSubDirectory}/**`;
-// //
-// //             const ignore2 = `/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/Td6bZPN/webkit/${config.sourceExcludes.paths[0]}`;
-// //
-// //             console.log('name', name);
-// //             //console.log('regex1', regex1);
-// //             console.log('regex2', regex2);
-// //             console.log('ignore2', ignore2);
-// //
-// //             const match = minimatch(name, regex2, { ignore: ignore2 });
-// //
-// //             //const match = minimatch(name, regex2);
-// //
-// //             console.log('match', match);
-// //
-// //             if(match) {
-// //                 console.log('TRUE', str.slice(1, str.length).trim());
-// //                 csvData = csvData.concat(_transformDiffStr(String(line)));
-// //             }
-// //         });
-// //
-// //         read.on('error', (error) => {
-// //             console.error('ERROR', error);
-// //             reject(error);
-// //         });
-// //
-// //         read.on('close', () => {
-// //             console.log('IN READ CLOSE ######');
-// //             console.log('csvData', csvData);
-// //             resolve(csvData);
-// //         });
-// //     });
-// // }
-//
-// // async function start() {
-// //
-// //     const gitUtil = new GitUtil(config);
-// //
-// //     const targetAndSourceDiff = await gitUtil.diff({
-// //         outputFile: '/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TGN9EQG//targetAndsourceDiffList.txt',
-// //         options: [
-// //             '--no-index',
-//             '--name-status',
-//             '/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TGN9EQG/webkit',
-//             '/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TGN9EQG/test262',
-//         ]
-//     });
-//
-//     await createDiffListFile({
-//         outputFile: "/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TGN9EQG/targetAndsourceDiffList.txt",
-//         diffList: targetAndSourceDiff
-//     });
-// }
-
-// start();
-
-// filterDifflist1();
-
-// REMOVE GLOBAL
-
-this.statusNotFound = 'N/A';
-
-function getStatus(params) {
-  const { filePath, name } = params;
-
-  let status = null;
-
-  return new Promise((resolve, reject) => {
-    const read = readline.createInterface({
-      input: fs.createReadStream(filePath, { encoding: 'utf8' }),
-      crlfDelay: Infinity,
-    });
-
-    read.on('line', (line) => {
-      console.log('LINE 1', line);
-
-      if (line.split(',')[1] === name) {
-        status = line.split(',')[0];
-        console.info('Got it...status is', status);
-        read.close();
-      }
-    });
-
-    read.on('close', () => {
-      resolve(status || this.statusNotFound);
-    });
-  });
-}
-
-function readDiffLists() {
-  const target = '/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TKx3oPm/targetDiffList.txt';
-  const source = '/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TKx3oPm/sourceDiffList.txt';
-  const combined = '/private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TKx3oPm/targetAndSourceDiffList.txt'; // this.targetAndSourceDiffListPath
-
-  return new Promise((resolve, reject) => {
-    const read = readline.createInterface({
-      input: fs.createReadStream(combined, { encoding: 'utf8' }),
-      crlfDelay: Infinity,
-    });
-
-    read.on('line', async (line) => {
-      const status = line.split(',')[0];
-      const name = line.split(',')[1];
-
-      console.log('LINE', line);
-      console.log('status', status);
-      console.log('name', name);
-
-      read.pause();
-
-      const targetStatus = await getStatus({
-        filePath: target,
-        name,
-      });
-      const sourceStatus = await getStatus({
-        filePath: source,
-        name,
-      });
-
-      // get outcome here
-
-      // add to the right queue
-
-      // resume reading
-
-      read.resume();
-    });
-
-    read.on('pause', () => {
-      console.log('PAUSED!!!!!');
-    });
-
-    read.on('close', () => {
-      console.info('DONE queneing exports...');
-      resolve(this.queues);
-    });
-  });
-}
-
-// readDiffLists();
 
 module.exports = {
   FileExporter,
 };
-
-// fsPromises.readFile('')
-//     .then((buffer) => {
-//         const lines =buffer.toString();
-//
-//         lines.forEach((line) => {
-//            console.log('\n');
-//            console.log(String(line));
-//         });
-//
-//     // console.log('lines', String(buffer));
-// });
-
-// git diff --no-index --name-status /private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TRL43eK/test262 /private/var/folders/q2/cq6cldys58b4y2s_fh571jl00000gn/TRL43eK/webkit
-
-// INCOMING excludes

@@ -8,22 +8,36 @@ const { FileOutcomeManager } = require('./utils/fileOutcomeManger.js');
 /* Parse args */
 const argv = yargs
   .usage('Usage: test262-automation [engine] [options]')
-  .option('engine', {
-    alias: 'e',
+  .option('debug')
+  .option('implementation', {
+    alias: 'i',
     demandOption: true,
     describe: 'Specify implementor engine...options are jsc',
     type: 'string',
   }).argv;
 
+
+let implementationConfig = argv.implementation;
+let githubConfig = 'github';
+
+if (argv.debug) {
+  process.NODE_ENV = 'DEBUG';
+  implementationConfig = `${implementationConfig}-debug`;
+  githubConfig = `${githubConfig}-debug`;
+}
+
+
 /* Setup Config */
-const config = require(`./config/implementation/${argv.engine}.json`); // TODO add config validation method to tie in with CLI
+implementationConfig = require(`./config/implementation/${implementationConfig}.json`); // TODO add config validation method to tie in with CLI
+githubConfig = require(`./config/${githubConfig}.json`);
 
 /* Initialize GitUitl */
 
 const home_directory = process.cwd();
 
 // TODO validate config values b4 init
-const gitUtil = new GitUtil(config);
+
+const gitUtil = new GitUtil({...implementationConfig, ...githubConfig });
 
 try {
   gitUtil
@@ -107,28 +121,6 @@ try {
         excludes: info.sourceExcludes.paths,
         errorStatuses: [],
       });
-      //
-      // const targetDiffListPath = gitUtil.createDiffListJSON({
-      //      outputFile: info.targetDiffListOutputFile,
-      //      diffListObj: JSON.stringify(targetDiffListObj)
-      // });
-      //
-      // const sourceDiffListPath = gitUtil.createDiffListJSON({
-      //     outputFile: info.sourceDiffListOutputFile,
-      //     diffListObj: JSON.stringify(sourceDiffListObj)
-      // });
-      //
-      // const targetAndSourceDiffListPath = gitUtil.createDiffListJSON({
-      //     outputFile: info.targetAndSourceDiffListOutputFile,
-      //     diffListObj: JSON.stringify(targetAndSourceDiffListObj)
-      // });
-
-
-      // console.log("FILESSSSS", {
-      //     targetDiffListPath,
-      //     sourceDiffListPath,
-      //     targetAndSourceDiffListPath
-      // });
 
       // get the 3 diff lists here and pass them to the newly initialized fileExporter
       return {
@@ -139,7 +131,7 @@ try {
         sourceDirectory: info.sourceDirectory,
       };
     })
-    .then(({
+    .then(async ({
       targetDiffListObj, sourceDiffListObj, targetAndSourceDiffListObj, targetDirectory, sourceDirectory,
     }) => {
 
@@ -156,10 +148,14 @@ try {
         }),
       });
 
-      const outcomes = fileOutcomeManager.init();
+     await fileOutcomeManager.init();
 
-      console.log('outcomes', outcomes);
-    });
+      return fileOutcomeManager.fileOutcomes
+    }).then(() => {
+
+    gitUtil.commitAndPushRemoteBranch();
+
+  });
 
   // TODO add cleanup steps on success for publishing PR
   // remote temp files and clone

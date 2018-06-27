@@ -1,39 +1,51 @@
 module.exports = {
 
-  fileStatues: {
+  /*
+  *
+  *
+  *
+  *
+  * */
+  FILE_STATUSES: {
     ADDED: 'A',
     DELETE: 'D',
     MODIFIED: 'M',
-    RENAMED: 'R', // TODO add tech debt issue for R which is  not 100
-    NO_CHANGE: 'N', // No change found
+    RENAMED: 'R', // TODO add tech debt issue for R %'s ex R74, R100, R20
     FILE_TYPE_CHANGES: 'T',
+    NO_CHANGE: 'N', // Note: this is NOT a git status, but a status we attribute if there is no change found for a file an the target or source repo
   },
 
-  scenarios: { // TODO add notes here to explain statuses
-    DA: 4, // would happen if deleted and then re-added in webkit
+  /*
+  *
+  *
+  *
+  *
+  * */
+  STATUS_SCENARIOS: { // TODO add notes here to explain statuses
+    DA: 4, // would happen if it was previously deleted in source and then deleted in target and re-added in source at the time of comparision
     DD: 0,
     DM: 4,
     DR: 5,
     DT: 6,
-    MA: 3, // would happen if deleted and then re-added in webkit
+    MA: 3, // would happen if it was previously deleted in source and then modified in target and re-added in source at the time of comparision
     MD: 9,
     MM: 3,
     MR: 10,
     MT: 11,
 
-    // Only changes in source
+    // NO_CHANGE in target --> Only changes in source
     NM: 2,
     NA: 12, // meets file export criteria
     ND: 7,
     NR: 8,
     NT: 13,
 
-    // Only changes in target
+    // NO_CHANGE in target --> Only changes in target
     DN: 1,
     MN: 0,
   },
 
-  fileOutcomes: {
+  FILE_OUTCOMES: {
     DO_NOT_EXPORT: 0,
     DO_NOT_EXPORT_AND_BLOCK_FUTURE_EXPORTS: 1, // UPDATE DNE LIST +
     EXPORT_AND_OVERWRITE_PREVIOUS_VERSION: 2,
@@ -50,7 +62,7 @@ module.exports = {
     UPDATE_EXTENSION_ON_TARGET_FILE: 13,
   },
 
-  exportActions: {
+  EXPORT_ACTIONS: { // TODO delete?
     ADD_TO_DO_NOT_EXPORT_LIST: 0,
     UPDATE_REFERENCE_IN_DO_NOT_EXPORT_LIST: 1,
     REMOVE_FROM_DO_NOT_EXPORT_LIST: 2,
@@ -58,6 +70,50 @@ module.exports = {
     APPEND_MODIFIED_SOURCE: 4,
     APPEND_MODIFIED_NOTE: 5,
   },
+
+  EXPORT_MESSAGES: {
+
+    TEMPLATE:`
+    /*
+    ****************************************************** test262-automation ******************************************************
+    {exportMessage}
+    */`,
+
+    3: `Summary: The two files have now diverged.
+        File Status: Partially curated & modified.
+        Source Status: Modified since its export.
+        Below is the current and modified source which was exported on {exportDateTime}`,
+
+    4: `Summary: Source material changed after curation & deletion of exported file.
+        File Status: Fully curated & deleted
+        Source Status: Modified since curation & deletion.
+        Below is the current and modified source which was exported on {exportDateTime}`,
+
+    5: `Summary: Source file renamed after curation & deletion of exported file.
+        File Status: Fully curated & deleted
+        Source Status: Renamed since curation & deletion.
+        This file name and location now matches the source which was exported on {exportDateTime}`,
+
+    6: `Summary: Source file type changed after curation & deletion of exported file.
+        File Status: Fully curated & deleted
+        Source Status: File type change since curation & deletion.
+        This file type now matches the new type of the source which was exported on {exportDateTime}`,
+
+    9: `Summary: Source file deleted after partial curation.
+        File Status: Partially curated & modified.
+        Source Status: Deleted since export.
+        This message was added on {exportDateTime}`,
+
+    10: `Summary: Source file renamed after partial curation & modification of exported file.
+        File Status: Partially curated & modified.
+        Source Status: Renamed since export.
+        This file name and location now matches the source which was exported on {exportDateTime}`,
+
+    11: `Summary: Source file type changed after partial curation & modification of exported file.
+        File Status: Partially curated & modified.
+        Source Status: File type change since export.
+        This file type and location now matches the source which was exported on {exportDateTime}`
+  }
 };
 
 /*
