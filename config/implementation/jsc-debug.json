@@ -2,7 +2,7 @@
   "license": "Debug",
   "newBranchNameForMerge": "jsc-debug-auto-export",
   "pullRequestLabels": [],
-  "pullRequestTitle", "Import test changes from jsc",
+  "pullRequestTitle": "Import test changes from jsc",
   "targetGit": "git@github.com:test262-automation/mock-test262.git",
   "targetSubDirectory": "mock-test262/implementation-contributed/javascriptcore",
   "targetRevisionAtLastExport": "383c176",
