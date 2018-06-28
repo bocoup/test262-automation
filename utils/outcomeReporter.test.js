@@ -13,13 +13,16 @@ describe('OutcomeReporter', function() {
         '/stress/for-of-array-mode.js',
       ]
     ))
-      .toBe(` - test262/implementation-contributed/jsc/stress/for-in-array-mode.js
- - test262/implementation-contributed/jsc/stress/for-of-array-mode.js`);
+      .toBe(` - [test262/implementation-contributed/jsc/stress/for-in-array-mode.js](../../blob/test262/implementation-contributed/jsc/stress/for-in-array-mode.js)
+ - [test262/implementation-contributed/jsc/stress/for-of-array-mode.js](../../blob/test262/implementation-contributed/jsc/stress/for-of-array-mode.js)`);
   });
 
   it('should use the commit shas in the heading', function() {
     let reporter = new OutcomeReporter({
-      implConfig: { targetSubDirectory: "test262/implementation-contributed/jsc" }
+      implConfig: {
+        targetSubDirectory: "test262/implementation-contributed/jsc",
+        targetGit: 'git@github.com:test262-automation/mock-test262.git',
+      }
     });
 
     expect(reporter.renderHeading({
@@ -31,7 +34,7 @@ describe('OutcomeReporter', function() {
 # Import JavaScript Test Changes from jsc
 
 Changes imported in this pull request include all changes made since
-\`abc\` in jsc and all changes made since \`123\` in
+[abc](https://github.com/test262-automation/mock-test262/blob/abc) in jsc and all changes made since [123](../blob/123) in
 test262.
 `)
   });
@@ -57,14 +60,17 @@ test262.
 These files were updated or added in the jsc repo but they
 are not synced to test262 because they are excluded.
 
- - test262/implementation-contributed/jsc/a.js
+ - [test262/implementation-contributed/jsc/a.js](../../blob/test262/implementation-contributed/jsc/a.js)
 `.trim())
   });
 
 
   it('should generate a report', function() {
     let reporter = new OutcomeReporter({
-      implConfig: { targetSubDirectory: "test262/implementation-contributed/jsc" }
+      implConfig: {
+        targetSubDirectory: "test262/implementation-contributed/jsc",
+        targetGit: 'git@github.com:test262-automation/mock-test262.git',
+      }
     });
 
     expect(reporter.generateReport({
@@ -77,7 +83,7 @@ are not synced to test262 because they are excluded.
 # Import JavaScript Test Changes from jsc
 
 Changes imported in this pull request include all changes made since
-\`123\` in jsc and all changes made since \`abc\` in
+[123](https://github.com/test262-automation/mock-test262/blob/123) in jsc and all changes made since [abc](../blob/abc) in
 test262.
 
 ### 1 Ignored File
@@ -85,7 +91,7 @@ test262.
 These files were updated or added in the jsc repo but they
 are not synced to test262 because they are excluded.
 
- - test262/implementation-contributed/jsc/a.js
+ - [test262/implementation-contributed/jsc/a.js](../../blob/test262/implementation-contributed/jsc/a.js)
 `.trim())
   });
 });

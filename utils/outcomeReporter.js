@@ -141,7 +141,8 @@ class OutcomeReporter {
   }
 
   renderHeading({vendor, sourceSha, targetSha}) {
-    let targetGithub = /\:([^.]+)./.exec(this.implConfig.targetGit)[1]
+    let match = /\:([^.]+)./.exec(this.implConfig.targetGit)
+    let targetGithub = match ? match[1] : ''
 
     return stripIndent`
       # Import JavaScript Test Changes from ${vendor}
