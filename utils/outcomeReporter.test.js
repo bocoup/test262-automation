@@ -26,7 +26,7 @@ describe('OutcomeReporter', function() {
     });
 
     expect(reporter.renderHeading({
-      vendor: 'jsc',
+      implementatorName: 'jsc',
       sourceSha: 'abc',
       targetSha: '123',
     }))
@@ -76,7 +76,7 @@ are not synced to test262 because they are excluded.
     expect(reporter.generateReport({
       sourceSha: '123',
       targetSha: 'abc',
-      vendor: 'jsc',
+      implementatorName: 'jsc',
       outcomes: { '0': { files: ['/a.js']}}
     }))
       .toBe(`
@@ -93,5 +93,11 @@ are not synced to test262 because they are excluded.
 
  - [test262/implementation-contributed/jsc/a.js](../../blob/test262/implementation-contributed/jsc/a.js)
 `.trim())
+  });
+
+  it('should pluralize "File"', function() {
+    expect(OutcomeReporter.pluralize('File', 0)).toBe('Files')
+    expect(OutcomeReporter.pluralize('File', 1)).toBe('File')
+    expect(OutcomeReporter.pluralize('File', 315)).toBe('Files')
   });
 });
