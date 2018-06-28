@@ -1,4 +1,5 @@
 const OutcomeReporter = require('./outcomeReporter')
+const {stripIndent} = require('common-tags')
 
 var outcomes = { '0':
                  { description: [ 'DO_NOT_EXPORT.....' ],
@@ -97,7 +98,7 @@ describe('OutcomeReporter', function() {
       sourceSha: 'abc',
       targetSha: '123',
     }))
-      .toBe(`
+      .toBe(stripIndent`
 # Import JavaScript Test Changes from jsc
 
 Changes imported in this pull request include all changes made since
@@ -124,13 +125,11 @@ test262.
       .toBe(`
 ### 1 Ignored File
 
-
 These files were updated or added in the jsc repo but they
 are not synced to test262 because they are excluded.
 
-
  - test262/implementation-contributed/jsc/a.js
-`)
+`.trim())
   });
 
 
@@ -146,24 +145,18 @@ are not synced to test262 because they are excluded.
       outcomes: { '0': { files: ['/a.js']}}
     }))
       .toBe(`
-
 # Import JavaScript Test Changes from jsc
 
 Changes imported in this pull request include all changes made since
 \`123\` in jsc and all changes made since \`abc\` in
 test262.
 
-
-
 ### 1 Ignored File
-
 
 These files were updated or added in the jsc repo but they
 are not synced to test262 because they are excluded.
 
-
  - test262/implementation-contributed/jsc/a.js
-
-`)
+`.trim())
   });
 });
