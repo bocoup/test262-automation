@@ -13,10 +13,10 @@ const GITHUB_TOKEN = Symbol('GITHUB_TOKEN');
  */
 class GitHub {
   constructor(config) {
-    this[T262_GH_ORG] = config.t252GithubOrg;
-    this[T262_GH_REPO_NAME] = config.t252GithubRepoName;
-    this[T262_BASE_BRANCH] = config.t252BaseBranch;
-    this[GITHUB_USERNAME] = config.t252GithubUsername;
+    this[T262_GH_ORG] = config.t262GithubOrg;
+    this[T262_GH_REPO_NAME] = config.t262GithubRepoName;
+    this[T262_BASE_BRANCH] = config.t262BaseBranch;
+    this[GITHUB_USERNAME] = config.t262GithubUsername;
     this[GITHUB_TOKEN] = config.githubToken;
 
     assert(this[GITHUB_TOKEN], 'No github token found. Please set the GITHUB_TOKEN enviroment variable before attempting to open a pull request.');
@@ -29,13 +29,14 @@ class GitHub {
      https://developer.github.com/v3/pulls/#create-a-pull-request
   */
   openPullRequest({branchName, title, body}) {
+    let head = `${this[GITHUB_USERNAME]}:${branchName}`;
     return this.request({
       method: 'POST',
       path: `/repos/${this[T262_GH_ORG]}/${this[T262_GH_REPO_NAME]}/pulls`,
       body: {
         title,
         body,
-        head: `${this[GITHUB_USERNAME]}:${branchName}`,
+        head,
         base: this[T262_BASE_BRANCH],
         maintainer_can_modify: true,
       },
