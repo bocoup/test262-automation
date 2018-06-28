@@ -1,7 +1,6 @@
 const constants = require('./constants')
 const {stripIndent} = require('common-tags')
 
-
 const {
   DO_NOT_EXPORT,
   DO_NOT_EXPORT_AND_BLOCK_FUTURE_EXPORTS,
@@ -142,18 +141,20 @@ class OutcomeReporter {
   }
 
   renderHeading({vendor, sourceSha, targetSha}) {
+    let targetGithub = /\:([^.]+)./.exec(this.implConfig.targetGit)[1]
+
     return stripIndent`
       # Import JavaScript Test Changes from ${vendor}
 
       Changes imported in this pull request include all changes made since
-      \`${sourceSha}\` in ${vendor} and all changes made since \`${targetSha}\` in
+      [${sourceSha}](https://github.com/${targetGithub}/blob/${sourceSha}) in ${vendor} and all changes made since [${targetSha}](../blob/${targetSha}) in
       test262.
 `.trim()
   }
 
   renderFileList(files) {
     return files.map(file => {
-      return ` - ${this.contribDirectory}${file}`
+      return ` - [${this.contribDirectory}${file}](../../blob/${this.contribDirectory}${file})`
     }).join('\n');
   }
 
