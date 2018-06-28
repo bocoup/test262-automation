@@ -13,16 +13,17 @@ class PullRequestManager {
     branchName,
     sourceSha,
     targetSha,
-    vendor,
+    implementatorName,
     outcomes
   }) {
     let pullRequest = await this.uploadPullRequest({
       branchName,
       title: this.implConfig.pullRequestTitle,
       body: this.reporter.generateReport({
+        branch: branchName,
         sourceSha,
         targetSha,
-        vendor,
+        implementatorName,
         outcomes
       })
     });
@@ -50,4 +51,33 @@ class PullRequestManager {
   }
 }
 
-module.exports = PullRequestManager;
+
+function createPrManager({ghConfig, implConfig}) {
+  const GitHub = require('./github');
+  const OutcomeReporter = require('./outcomeReporter');
+
+  const githubConfig = {
+    t262GithubOrg: process.env.T262_GH_ORG || ghConfig.t262GithubOrg,
+    t262GithubRepoName: process.env.T262_GH_REPO_NAME || ghConfig.t262GithubRepoName,
+    t262BaseBranch: process.env.T262_BASE_BRANCH || ghConfig.t262BaseBranch,
+    t262GithubUsername: process.env.GITHUB_USERNAME || ghConfig.t262GithubUsername,
+    githubToken: process.env.GITHUB_TOKEN || ghConfig.githubToken,
+  };
+
+  const github = new GitHub(githubConfig);
+  const reporter = new OutcomeReporter({
+    implConfig,
+    githubConfig,
+  });
+
+  return new PullRequestManager({
+    github,
+    reporter,
+    implConfig,
+  });
+}
+
+module.exports = {
+  PullRequestManager,
+  createPrManager,
+};
