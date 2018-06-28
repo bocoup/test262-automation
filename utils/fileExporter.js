@@ -26,21 +26,18 @@ class FileExporter {
 
   getFilePathOptions({ filePath, sourceDiffList }) {
     const baseFilePath = this.trimFilePath(filePath);
-    const renamedFilePath = get(sourceDiffList, filePath, '').split(',')[1];
+    const sourceFilePath = `${this.sourceDirectory}${baseFilePath}`;
+    const targetFilePath = `${this.targetDirectory}${baseFilePath}`;
+    const renamedFilePath = get(sourceDiffList, sourceFilePath, '').split(',')[1];
 
-    const filePathOptions = {
+    return {
       isSourceFilePath: this.isSourceFilePath(filePath),
-      sourceFilePath: `${this.sourceDirectory}${baseFilePath}`,
-      targetFilePath: `${this.targetDirectory}${baseFilePath}`,
+      sourceFilePath,
+      targetFilePath,
       renamedFilePath,
       baseFilePath,
+      renamedBaseFilePath: renamedFilePath ? this.trimFilePath(renamedFilePath) : null,
     };
-
-    if(renamedFilePath) {
-      filePathOptions.renamedBaseFilePath = this.trimFilePath(renamedFilePath);
-    }
-
-    return filePathOptions;
   }
 
   isSourceFilePath(path) {
@@ -128,14 +125,13 @@ class FileExporter {
 
   async renameTargetFile({ files, outcome }) {
     files.forEach(async filePath => {
-      const [ oldFile , newFile ] = filePath.split();
+      const [ oldFile , newFile ] = filePath.split(',');
       await rename(`${this.targetDirectory}${oldFile}`, `${this.targetDirectory}${newFile}`);
     });
   }
 
-  async deleteModifiedTargetWithNoteOnDeletion({ files, outcome }) {
+  async appendModifiedTargetWithNoteOnDeletion({ files, outcome }) {
     files.forEach(async filePath => {
-      await unlink(`${this.targetDirectory}${filePath}`);
       const appendData = await this._getExportMessage({ outcome });
       await this._appendToTargetFile({appendData, filePath })
     });
@@ -143,7 +139,7 @@ class FileExporter {
 
   async renameModifiedTargetWithNoteOnDeletion({ files, outcome }) {
     files.forEach(async filePath => {
-      const [ oldFile , newFile ] = filePath.split();
+      const [ oldFile , newFile ] = filePath.split(',');
       await rename(`${this.targetDirectory}${oldFile}`, `${this.targetDirectory}${newFile}`);
       const appendData = await this._getExportMessage({ outcome });
       await this._appendToTargetFile({appendData, filePath: newFile })

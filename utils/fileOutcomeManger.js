@@ -114,13 +114,13 @@ class FileOutcomeManager {
 
       if (files.length) {
         switch (parseInt(outcome)) {
-          case DO_NOT_EXPORT:
+          case DO_NOT_EXPORT: // MN DD
             return await this.fileExporter.updateFileReferenceInCurationLog({files, outcome });
 
-          case DO_NOT_EXPORT_AND_BLOCK_FUTURE_EXPORTS:
+          case DO_NOT_EXPORT_AND_BLOCK_FUTURE_EXPORTS: // DN
             return await this.fileExporter.addFilesToDoNotExportList({files, outcome });
 
-          case EXPORT_AND_OVERWRITE_PREVIOUS_VERSION:
+          case EXPORT_AND_OVERWRITE_PREVIOUS_VERSION: // NM
             return await this.fileExporter.exportAndOverwrite({ files, outcome });
 
           case APPEND_MODIFIED_TARGET_WITH_NOTE_AND_NEW_SOURCE:
@@ -136,7 +136,7 @@ class FileOutcomeManager {
             return await this.fileExporter.renameTargetFile({ files, outcome });
 
           case APPEND_MODIFIED_TARGET_WITH_NOTE_ON_SOURCE_DELETION:
-            return await this.fileExporter.deleteModifiedTargetWithNoteOnDeletion({ files, outcome });
+            return await this.fileExporter.appendModifiedTargetWithNoteOnDeletion({ files, outcome });
           case RENAME_MODIFIED_TARGET_FILE_WITH_NOTE_ON_RENAME:
             return await this.fileExporter.renameModifiedTargetWithNoteOnDeletion({ files, outcome });
           case EXPORT_FILE:
