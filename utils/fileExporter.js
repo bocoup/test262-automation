@@ -77,6 +77,10 @@ class FileExporter {
     return await cpFile(`${this.sourceDirectory}${filePath}`, `${this.targetDirectory}${filePath}`, { overwrite: false });
   }
 
+  async _copySourceFileToRenamedTarget(newFilePath) {
+    return await cpFile(`${this.sourceDirectory}${newFilePath}`, `${this.targetDirectory}${newFilePath}`);
+  }
+
   async updateFileReferenceInCurationLog({ files, outcome }) {
     console.log('files', files);
     console.log('outcome', outcome);
@@ -125,8 +129,12 @@ class FileExporter {
 
   async renameTargetFile({ files, outcome }) {
     files.forEach(async filePath => {
-      const [ oldFile , newFile ] = filePath.split(',');
-      await rename(`${this.targetDirectory}${oldFile}`, `${this.targetDirectory}${newFile}`);
+      const [ renameWithPercent,  oldFilePath , newFilePath ] = filePath.split(',');
+      await rename(`${this.targetDirectory}${oldFilePath}`, `${this.targetDirectory}${newFilePath}`);
+
+      if(renameWithPercent !== 'R100'){
+        await this._copySourceFileToRenamedTarget(newFilePath);
+      }
     });
   }
 
@@ -139,10 +147,15 @@ class FileExporter {
 
   async renameModifiedTargetWithNoteOnDeletion({ files, outcome }) {
     files.forEach(async filePath => {
-      const [ oldFile , newFile ] = filePath.split(',');
-      await rename(`${this.targetDirectory}${oldFile}`, `${this.targetDirectory}${newFile}`);
+      const [ renameWithPercent, oldFilePath , newFilePath ] = filePath.split(',');
+
+      await rename(`${this.targetDirectory}${oldFilePath}`, `${this.targetDirectory}${newFilePath}`);
+
+      if(renameWithPercent !== 'R100') {
+        await this._copySourceFileToTarget(newFilePath);
+      }
       const appendData = await this._getExportMessage({ outcome });
-      await this._appendToTargetFile({appendData, filePath: newFile })
+      await this._appendToTargetFile({appendData, filePath: newFilePath })
     });
   }
 

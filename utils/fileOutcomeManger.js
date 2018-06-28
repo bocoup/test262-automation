@@ -155,13 +155,12 @@ class FileOutcomeManager {
     let sourceStatus = get(this.sourceDiffList, sourceFilePath, NO_CHANGE).split(',')[0]; // support for renames
     const sourceAndTargetDiffStatus = get(this.targetAndSourceDiffList, filePath, NO_CHANGE);
     const isRenamedStatus = status => status[0] === RENAMED;
+    let renameWithPercent = '';
+
 
     if (isRenamedStatus(sourceStatus)) {
+      renameWithPercent = sourceStatus;
       sourceStatus = RENAMED;
-    }
-
-    if (isRenamedStatus(targetStatus)) {
-      targetStatus = RENAMED;
     }
 
     if ((targetStatus === NO_CHANGE) && (sourceStatus === NO_CHANGE)) {
@@ -177,6 +176,7 @@ class FileOutcomeManager {
     return {
       sourceStatus,
       targetStatus,
+      renameWithPercent
     };
   }
 
@@ -191,12 +191,12 @@ class FileOutcomeManager {
         renamedFilePath,
       } = this.fileExporter.getFilePathOptions({ filePath , sourceDiffList: this.sourceDiffList });
 
-      const { sourceStatus, targetStatus } = this.getFileStatus({ targetFilePath, sourceFilePath, isSourceFilePath, filePath });
+      const { sourceStatus, targetStatus , renameWithPercent } = this.getFileStatus({ targetFilePath, sourceFilePath, isSourceFilePath, filePath });
       const statusScenario = STATUS_SCENARIOS[`${targetStatus}${sourceStatus}`];
 
       if (this.fileOutcomes[statusScenario]) {
         if (renamedFilePath) {
-          const oldAndRenamedFile = `${baseFilePath},${renamedBaseFilePath}`;
+          const oldAndRenamedFile = `${renameWithPercent},${baseFilePath},${renamedBaseFilePath}`;
 
           this.fileOutcomes[statusScenario].files.push(oldAndRenamedFile);
         } else {
