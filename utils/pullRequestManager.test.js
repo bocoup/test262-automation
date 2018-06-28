@@ -1,4 +1,4 @@
-const PullRequestManager = require('./pullRequestManager');
+const { PullRequestManager } = require('./pullRequestManager');
 
 
 describe('PullRequestManager', function() {

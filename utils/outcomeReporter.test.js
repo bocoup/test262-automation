@@ -12,9 +12,9 @@ describe('OutcomeReporter', function() {
         '/stress/for-in-array-mode.js',
         '/stress/for-of-array-mode.js',
       ]
-    ))
-      .toBe(` - [test262/implementation-contributed/jsc/stress/for-in-array-mode.js](../../blob/test262/implementation-contributed/jsc/stress/for-in-array-mode.js)
- - [test262/implementation-contributed/jsc/stress/for-of-array-mode.js](../../blob/test262/implementation-contributed/jsc/stress/for-of-array-mode.js)`);
+    ,'my-branch'))
+      .toBe(` - [implementation-contributed/jsc/stress/for-in-array-mode.js](../blob/my-branch/implementation-contributed/jsc/stress/for-in-array-mode.js)
+ - [implementation-contributed/jsc/stress/for-of-array-mode.js](../blob/my-branch/implementation-contributed/jsc/stress/for-of-array-mode.js)`);
   });
 
   it('should use the commit shas in the heading', function() {
@@ -60,7 +60,7 @@ test262.
 These files were updated or added in the jsc repo but they
 are not synced to test262 because they are excluded.
 
- - [test262/implementation-contributed/jsc/a.js](../../blob/test262/implementation-contributed/jsc/a.js)
+ - [implementation-contributed/jsc/a.js](../blob/undefined/implementation-contributed/jsc/a.js)
 `.trim())
   });
 
@@ -74,6 +74,7 @@ are not synced to test262 because they are excluded.
     });
 
     expect(reporter.generateReport({
+      branch: 'my-branch',
       sourceSha: '123',
       targetSha: 'abc',
       implementatorName: 'jsc',
@@ -91,7 +92,7 @@ test262.
 These files were updated or added in the jsc repo but they
 are not synced to test262 because they are excluded.
 
- - [test262/implementation-contributed/jsc/a.js](../../blob/test262/implementation-contributed/jsc/a.js)
+ - [implementation-contributed/jsc/a.js](../blob/my-branch/implementation-contributed/jsc/a.js)
 `.trim())
   });
 
