@@ -3,11 +3,11 @@
   "newBranchNameForMerge": "jsc-debug-auto-export",
   "targetGit": "git@github.com:test262-automation/mock-test262.git",
   "targetSubDirectory": "mock-test262/implementation-contributed/javascriptcore",
-  "targetRevisionAtLastExport": "383c176",
+  "targetRevisionAtLastExport": "1418889",
   "targetBranch": "master",
   "sourceGit": "git@github.com:test262-automation/mock-webkit.git",
   "sourceSubDirectory": "mock-webkit/JSTests",
-  "sourceRevisionAtLastExport": "de9f990b",
+  "sourceRevisionAtLastExport": "1a4026b7",
   "sourceBranch": "master",
   "sourceExcludes": {
     "foundInFile": ["$vm", "amalsTest"],
