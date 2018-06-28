@@ -17,7 +17,7 @@ const {
   UPDATE_EXTENSION_ON_MODIFIED_TARGET_FILE_WITH_NOTE_ON_EXTENSION_CHANGE,
   EXPORT_FILE,
   UPDATE_EXTENSION_ON_TARGET_FILE,
-} = constants.fileOutcomes;
+} = constants.FILE_OUTCOMES;
 
 // Very dumb pluralization helper. In practice we only use this to
 // pluralize the word file/files
