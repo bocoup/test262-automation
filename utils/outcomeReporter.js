@@ -26,7 +26,14 @@ class OutcomeReporter {
   }
 
   get contribDirectory() {
-    return this.implConfig.targetSubDirectory
+    // TODO look into updating targetSubDirectory to not include the
+    // repo name
+    // `implementation-contributed/jsc` instead of `test262/implementation-contributed/jsc`
+
+    // Slice off the repo name from the targetSubDirectory since it
+    // isn't used once the commits are made in github
+    let subDir = this.implConfig.targetSubDirectory;
+    return subDir.slice(subDir.indexOf('/') + 1)
   }
 
   renderHeading({implementatorName, sourceSha, targetSha}) {
@@ -42,13 +49,13 @@ class OutcomeReporter {
 `.trim()
   }
 
-  renderFileList(files) {
+  renderFileList(files, branch) {
     return files.map(file => {
-      return ` - [${this.contribDirectory}${file}](../../blob/${this.contribDirectory}${file})`
+      return ` - [${this.contribDirectory}${file}](../blob/${branch}/${this.contribDirectory}${file})`
     }).join('\n');
   }
 
-  renderSubSection(sectionId, sectionInfo, implementatorName) {
+  renderSubSection(sectionId, sectionInfo, implementatorName, branch) {
     let templates = OutcomeReporter.TEMPLATES[sectionId];
     let context = {
       fileCount: sectionInfo.files.length,
@@ -65,18 +72,19 @@ class OutcomeReporter {
 
 ${templates.description(context)}
 
-${this.renderFileList(sectionInfo.files)}
+${this.renderFileList(sectionInfo.files, branch)}
 `.trim();
   }
 
   generateReport({
+    branch,
     sourceSha,
     targetSha,
     implementatorName,
     outcomes
   }) {
     let sections = Object.entries(outcomes).map(([sectionId, section]) => {
-      return this.renderSubSection(sectionId, section, implementatorName);
+      return this.renderSubSection(sectionId, section, implementatorName, branch);
     });
     return stripIndent`
 ${this.renderHeading({sourceSha, targetSha, implementatorName})}
