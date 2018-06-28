@@ -27,7 +27,7 @@ describe('Github Util', () => {
     fetch = jest.fn(() => Promise.resolve({ status: 200, json: () => ({ api: 'response' }) }));
     GitHub.__set__('fetch', fetch);
 
-    gitHub = new GitHub(config, fetch);
+    gitHub = new GitHub(config);
   });
 
   test('throws an assertion if there is no github token', () => {
