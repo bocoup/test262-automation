@@ -1,41 +1,27 @@
-const PullRequestManager = require('./pull-request-manager');
+const PullRequestManager = require('./pullRequestManager');
 
 
 describe('PullRequestManager', function() {
 
-  test('branchname should be the prefix plus a short sha', function() {
-    let manager = new PullRequestManager({
-      config: {
-        sourceShaRevision: 'a8f7012587250b32ffb43a3cbd8da8a9f9d1565e',
-        branchPrefix: 'export-jsc',
-      },
-    });
-
-    expect(manager.branchName()).toBe('export-jsc-a8f7012')
-  });
-
   test('it opens a pull request and adds a label', async function() {
-    let git = {
-      checkoutBranch() {},
-      addAll() {},
-      commit() {},
-      push() {},
+    let reporter = {
+      generateReport: () => ''
     };
     let github = {
         openPullRequest: jest.fn(() => Promise.resolve({number: 1})),
         addLabel: jest.fn(() => Promise.resolve({number: 1})),
       };
     let manager = new PullRequestManager({
-      git,
+      reporter,
       github,
-      config: {
+      implConfig: {
         sourceShaRevision: 'a8f7012587250b32ffb43a3cbd8da8a9f9d1565e',
         branchPrefix: 'export-jsc',
-        label: 'export-vendor'
+        pullRequestLabels: ['export-vendor']
       },
     });
 
-    await manager.pushPullRequest();
+    await manager.pushPullRequest({});
     
     expect(github.addLabel).toBeCalledWith({
       number: 1,
@@ -49,7 +35,7 @@ describe('PullRequestManager', function() {
         openPullRequest: jest.fn(() => Promise.resolve())
       };
       let manager = new PullRequestManager({
-        config: {
+        implConfig: {
           sourceShaRevision: 'a8f7012587250b32ffb43a3cbd8da8a9f9d1565e',
           branchPrefix: 'export-jsc',
         },
@@ -70,7 +56,7 @@ describe('PullRequestManager', function() {
         updatePullRequest: jest.fn(() => Promise.resolve())
       };
       let manager = new PullRequestManager({
-        config: {
+        implConfig: {
           sourceShaRevision: 'a8f7012587250b32ffb43a3cbd8da8a9f9d1565e',
           branchPrefix: 'export-jsc',
         },
