@@ -7,6 +7,10 @@ const { FileExporter } = require('./utils/fileExporter.js');
 const { FileOutcomeManager } = require('./utils/fileOutcomeManger.js');
 const { createPrManager } = require('./utils/pullRequestManager.js')
 
+console.debug = function() {}
+console.info = function() {}
+console.log = function() {}
+
 /* Parse args */
 const argv = yargs
   .usage('Usage: test262-automation [engine] [options]')
