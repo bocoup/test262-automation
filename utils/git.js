@@ -51,8 +51,7 @@ class GitUtil {
   init() {
     return new Promise(async (resolve, reject) => {
       console.info('Initializing clone');
-
-      const newTempDir = await fsPromises.mkdtemp(os.tmpdir());
+      const newTempDir = await fsPromises.mkdtemp('./' + os.tmpdir());
 
       process.chdir(newTempDir);
       this.tempDirPath = process.cwd();
