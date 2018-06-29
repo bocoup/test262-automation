@@ -4,7 +4,7 @@ node_js:
 
 jobs:
   include:
-    - script: npm run test
+#    - script: npm run test
     - script: ./cron.sh
-      if: type IN (cron)
+#      if: type IN (cron)
 
