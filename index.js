@@ -225,7 +225,7 @@ try {
           outcomes
         });
       }
-    });
+    }).catch(console.error);
 
   // TODO add cleanup steps on success for publishing PR
   // remote temp files and clone
