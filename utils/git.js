@@ -190,7 +190,7 @@ class GitUtil {
       const clone = spawn(
         'travis_wait',
         [
-          '200',
+          200,
           'git',
           'clone',
           '--single-branch',
