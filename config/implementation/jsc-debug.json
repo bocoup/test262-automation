@@ -5,11 +5,11 @@
   "pullRequestLabels": [],
   "pullRequestTitle": "Import test changes from JavaScriptCore (Debug)",
   "targetGit": "https://github.com/test262-automation/test262.git",
-  "targetSubDirectory": "mock-test262/implementation-contributed/javascriptcore",
+  "targetSubDirectory": "test262/implementation-contributed/javascriptcore",
   "targetRevisionAtLastExport": "master",
   "targetBranch": "master",
   "sourceGit": "https://github.com/webkit/webkit.git",
-  "sourceSubDirectory": "mock-webkit/JSTests",
+  "sourceSubDirectory": "webkit/JSTests",
   "sourceRevisionAtLastExport": "0cef6dcea5a",
   "sourceBranch": "master",
   "sourceExcludes": {
