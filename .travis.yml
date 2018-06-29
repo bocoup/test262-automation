@@ -5,6 +5,6 @@ node_js:
 jobs:
   include:
 #    - script: npm run test
-    - script: ./cron.sh
+    - script: travis_wait 200 ./cron.sh
 #      if: type IN (cron)
 
