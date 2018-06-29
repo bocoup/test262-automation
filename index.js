@@ -3,12 +3,14 @@
 const { GitUtil  } = require('./utils/git.js');
 const { FileExporter } = require('./utils/fileExporter.js');
 const { FileStatusManager } = require('./utils/fileStatusManager.js');
+const { createPrManager } = require('./utils/pullRequestManager.js')
+
 
 const { getConfigOptions } = require('./utils/cli.js');
 
-const config = getConfigOptions();
+const { argv, implementationConfig, githubConfig } = getConfigOptions();
 
-const gitUtil = new GitUtil(config);
+const gitUtil = new GitUtil({...implementationConfig, ...githubConfig });
 
 try {
 
@@ -72,6 +74,22 @@ try {
     await fileExporter.init();
 
     await gitUtil.commitAndPushRemoteBranch();
+
+
+    if (argv.pullRequest) {
+      const prManager = createPrManager({
+        ghConfig: githubConfig,
+        implConfig: implementationConfig
+      });
+
+      await prManager.pushPullRequest({
+        branchName: gitUtil.targetBranch,
+        sourceSha: '', // TODO pass in data.sourceRevisionAtLastExport
+        targetSha: '', // TODO pass in data.targetRevisionAtLastExport
+        implementatorName: implementationConfig.implementatorName,
+        outcomes: fileOutcomes
+      });
+    }
 
   })();
 } catch (error) {

@@ -6,16 +6,20 @@ function getImplemationConfigOptions() {
 }
 
 function getConfigOptions() {
+
   const argv = yargs
     .usage('Usage: test262-automation [engine] [options]')
     .option('debug')
+    .option('pull-request', {
+      alias: 'p',
+      default: false
+    })
     .option('implementation', {
       alias: 'i',
       demandOption: true,
       describe: 'Specify implementor engine...options are jsc',
       type: 'string',
     }).argv;
-
 
   let implementationConfig = argv.implementation;
   let githubConfig = 'github';
@@ -32,8 +36,9 @@ function getConfigOptions() {
   githubConfig = require(`../config/${githubConfig}.json`);
 
   return {
-    ...implementationConfig,
-    ...githubConfig,
+    argv,
+    implementationConfig,
+    githubConfig,
   };
 }
 
