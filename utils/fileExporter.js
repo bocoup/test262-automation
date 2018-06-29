@@ -1,11 +1,25 @@
 const fs = require('fs');
 const util = require('util');
 const cpFile = require('cp-file');
-
 const fsPromises = fs.promises;
-const { EXPORT_MESSAGES } = require('./constants.js');
-const get = require('lodash.get');
-const { GitUtil } = require('./git.js');
+const { EXPORT_MESSAGES, FILE_OUTCOMES } = require('./constants.js');
+
+const {
+  DO_NOT_EXPORT,
+  DO_NOT_EXPORT_AND_BLOCK_FUTURE_EXPORTS,
+  EXPORT_AND_OVERWRITE_PREVIOUS_VERSION,
+  APPEND_MODIFIED_TARGET_WITH_NOTE_AND_NEW_SOURCE,
+  RE_EXPORT_SOURCE_WITH_NOTE_ON_PREVIOUS_TARGET_DELETION,
+  RE_EXPORT_RENAMED_SOURCE_WITH_NOTE_ON_PREVIOUS_TARGET_DELETION,
+  RE_EXPORT_SOURCE_NEW_EXTENSION_WITH_NOTE_ON_PREVIOUS_TARGET_DELETION_AND_EXTENSION,
+  DELETE_TARGET_FILE,
+  RENAME_TARGET_FILE,
+  APPEND_MODIFIED_TARGET_WITH_NOTE_ON_SOURCE_DELETION,
+  RENAME_MODIFIED_TARGET_FILE_WITH_NOTE_ON_RENAME,
+  UPDATE_EXTENSION_ON_MODIFIED_TARGET_FILE_WITH_NOTE_ON_EXTENSION_CHANGE,
+  EXPORT_FILE,
+  UPDATE_EXTENSION_ON_TARGET_FILE,
+} = FILE_OUTCOMES;
 
 
 const readFile = util.promisify(fs.readFile);
@@ -15,49 +29,77 @@ const unlink = util.promisify(fs.unlink);
 const rename = util.promisify(fs.rename);
 
 class FileExporter {
-
   constructor(params) {
     this.curationLogsPath = params.curationLogsPath;
-    this.modifiedFileTemplatePath = params.modifiedFileTemplatePath;
     this.sourceDirectory = params.sourceDirectory;
     this.targetDirectory = params.targetDirectory;
     this.exportDateTime = params.exportDateTime;
+    this.fileOutcomes = params.fileOutcomes;
   }
 
-  getFilePathOptions({ filePath, sourceDiffList }) {
-    const baseFilePath = this.trimFilePath(filePath);
-    const sourceFilePath = `${this.sourceDirectory}${baseFilePath}`;
-    const targetFilePath = `${this.targetDirectory}${baseFilePath}`;
-    const renamedFilePath = get(sourceDiffList, sourceFilePath, '').split(',')[1];
+  async init() {
+    return Object.keys(this.fileOutcomes).reduce(async (promise, outcome) => {
+      await promise;
+      const files = this.fileOutcomes[outcome].files;
 
-    return {
-      isSourceFilePath: this.isSourceFilePath(filePath),
-      sourceFilePath,
-      targetFilePath,
-      renamedFilePath,
-      baseFilePath,
-      renamedBaseFilePath: renamedFilePath ? this.trimFilePath(renamedFilePath) : null,
-    };
+      if (files.length) {
+        switch (parseInt(outcome)) {
+          case DO_NOT_EXPORT: // MN DD
+            return await this.updateFileReferenceInCurationLog({ files, outcome });
+
+          case DO_NOT_EXPORT_AND_BLOCK_FUTURE_EXPORTS: // DN
+            return await this.addFilesToDoNotExportList({ files, outcome });
+
+          case EXPORT_AND_OVERWRITE_PREVIOUS_VERSION: // NM
+            return await this.exportAndOverwrite({ files, outcome });
+
+          case APPEND_MODIFIED_TARGET_WITH_NOTE_AND_NEW_SOURCE:
+            return await this.exportAndAppendModifiedSource({ files, outcome });
+
+          case RE_EXPORT_SOURCE_WITH_NOTE_ON_PREVIOUS_TARGET_DELETION:
+            return await this.exportModifiedSourceWithNoteOnTargetDeletion({ files, outcome });
+
+          case RE_EXPORT_RENAMED_SOURCE_WITH_NOTE_ON_PREVIOUS_TARGET_DELETION:
+            return await this.reExportRenamedSourceWithSourceWithNoteOnDeletion({ files , outcome });
+
+          case DELETE_TARGET_FILE:
+            return await this.deleteTargetFile({ files, outcome });
+
+          case RENAME_TARGET_FILE:
+            return await this.renameTargetFile({ files, outcome });
+
+          case APPEND_MODIFIED_TARGET_WITH_NOTE_ON_SOURCE_DELETION:
+            return await this.appendModifiedTargetWithNoteOnDeletion({ files, outcome });
+          case RENAME_MODIFIED_TARGET_FILE_WITH_NOTE_ON_RENAME:
+            return await this.renameModifiedTargetWithNoteOnDeletion({ files, outcome });
+          case EXPORT_FILE:
+            return await this.exportFile({ files, outcome });
+          default:
+           throw new Error('NO OUTCOME FOUND');
+        }
+      }
+    });
   }
 
-  isSourceFilePath(path) {
-    return path.includes(this.sourceDirectory);
-  }
-
-  trimFilePath(path) {
-    return this.isSourceFilePath(path) ? path.slice(this.sourceDirectory.length, path.length) : path.slice(this.targetDirectory.length, path.length);
-  }
-
-  _getExportMessage({ outcome , modifiedSourceContent }) {
+  _getExportMessage({ outcome, modifiedSourceContent }) {
     let exportMessage = EXPORT_MESSAGES[outcome].replace(/{exportDateTime}/, this.exportDateTime);
-    exportMessage =  EXPORT_MESSAGES['TEMPLATE'].replace(/{exportMessage}/, exportMessage);
+    exportMessage = EXPORT_MESSAGES.TEMPLATE.replace(/{exportMessage}/, exportMessage);
 
-    if(modifiedSourceContent){
+    if (modifiedSourceContent) {
       exportMessage = `${exportMessage}
-      ${modifiedSourceContent}`
+      ${modifiedSourceContent}`;
     }
 
-    return  exportMessage;
+    return exportMessage;
+  }
+
+  async reExportRenamedSourceWithSourceWithNoteOnDeletion({ files, outcome }) {
+    files.forEach(async (filePath) => {
+      const [renameWithPercent, oldFilePath, newFilePath ] = filePath.split(',');
+      await this._copySourceFileToTarget(newFilePath);
+      const appendData = await this._getExportMessage({ outcome });
+      await this._appendToTargetFile({ appendData, filePath: newFilePath });
+    });
   }
 
   async _readModifiedSourceFile(filePath) {
@@ -87,18 +129,23 @@ class FileExporter {
   }
 
   async addFilesToDoNotExportList({ files, outcome }) {
-    console.log('DEBUG AMAL', process.cwd())
     const curationLog = await readFile(this.curationLogsPath);
     const curationLogData = JSON.parse(curationLog);
 
-    curationLogData.DO_NOT_EXPORT.push(...files);
+    console.log('curationLogData BEFORE', curationLogData);
+
+    files.forEach((filePath) => {
+      curationLogData.curatedFiles[filePath] = 'DELETED_IN_TARGET';
+    });
+
+    console.log('curationLogData AFTER', curationLogData);
 
     await writeFile(this.curationLogsPath, JSON.stringify(curationLogData, null, 2));
   }
 
   // TODO maybe use a copy cmd here instead?
   async exportAndOverwrite({ files, outcome }) {
-    files.forEach(async filePath => {
+    files.forEach(async (filePath) => {
       const newSource = await this._readModifiedSourceFile(filePath);
 
       await this._updateTargetFile({ filePath, newTarget: newSource });
@@ -106,8 +153,7 @@ class FileExporter {
   }
 
   async exportAndAppendModifiedSource({ files, outcome }) {
-    files.forEach(async filePath => {
-
+    files.forEach(async (filePath) => {
       const modifiedSourceContent = await this._readModifiedSourceFile(filePath);
       const appendData = this._getExportMessage({ outcome, modifiedSourceContent });
 
@@ -116,10 +162,10 @@ class FileExporter {
   }
 
   async exportModifiedSourceWithNoteOnTargetDeletion({ files, outcome }) {
-    files.forEach(async filePath => {
+    files.forEach(async (filePath) => {
       await this._copySourceFileToTarget(filePath);
       const appendData = await this._getExportMessage({ outcome });
-      await this._appendToTargetFile({ appendData, filePath })
+      await this._appendToTargetFile({ appendData, filePath });
     });
   }
 
@@ -128,39 +174,39 @@ class FileExporter {
   }
 
   async renameTargetFile({ files, outcome }) {
-    files.forEach(async filePath => {
-      const [ renameWithPercent,  oldFilePath , newFilePath ] = filePath.split(',');
+    files.forEach(async (filePath) => {
+      const [renameWithPercent, oldFilePath, newFilePath] = filePath.split(',');
       await rename(`${this.targetDirectory}${oldFilePath}`, `${this.targetDirectory}${newFilePath}`);
 
-      if(renameWithPercent !== 'R100'){
+      if (renameWithPercent !== 'R100') {
         await this._copySourceFileToRenamedTarget(newFilePath);
       }
     });
   }
 
   async appendModifiedTargetWithNoteOnDeletion({ files, outcome }) {
-    files.forEach(async filePath => {
+    files.forEach(async (filePath) => {
       const appendData = await this._getExportMessage({ outcome });
-      await this._appendToTargetFile({appendData, filePath })
+      await this._appendToTargetFile({ appendData, filePath });
     });
   }
 
   async renameModifiedTargetWithNoteOnDeletion({ files, outcome }) {
-    files.forEach(async filePath => {
-      const [ renameWithPercent, oldFilePath , newFilePath ] = filePath.split(',');
+    files.forEach(async (filePath) => {
+      const [renameWithPercent, oldFilePath, newFilePath] = filePath.split(',');
 
       await rename(`${this.targetDirectory}${oldFilePath}`, `${this.targetDirectory}${newFilePath}`);
 
-      if(renameWithPercent !== 'R100') {
+      if (renameWithPercent !== 'R100') {
         await this._copySourceFileToTarget(newFilePath);
       }
       const appendData = await this._getExportMessage({ outcome });
-      await this._appendToTargetFile({appendData, filePath: newFilePath })
+      await this._appendToTargetFile({ appendData, filePath: newFilePath });
     });
   }
 
-  async exportFile({files, outcome }) {
-    files.forEach(async filePath => {
+  async exportFile({ files, outcome }) {
+    files.forEach(async (filePath) => {
       await this._copySourceFileToTarget(filePath);
     });
   }

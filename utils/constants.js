@@ -1,5 +1,9 @@
 module.exports = {
 
+  NODE_ENV: {
+    DEBUG: 'DEBUG',
+  },
+
   /*
   *
   *
@@ -8,10 +12,12 @@ module.exports = {
   * */
   FILE_STATUSES: {
     ADDED: 'A',
-    DELETE: 'D',
+    DELETED: 'D',
     MODIFIED: 'M',
     RENAMED: 'R', // TODO add tech debt issue for R %'s ex R74, R100, R20
-    FILE_TYPE_CHANGES: 'T',
+    FILE_TYPE_CHANGE: 'T',
+    UNMERGED: 'U',
+    UNKNOWN: 'X',
     NO_CHANGE: 'N', // Note: this is NOT a git status, but a status we attribute if there is no change found for a file an the target or source repo
   },
 
@@ -73,7 +79,7 @@ module.exports = {
 
   EXPORT_MESSAGES: {
 
-    TEMPLATE:`
+    TEMPLATE: `
     /*
     ********************************** test262-automation **********************************
     {exportMessage}
@@ -112,8 +118,8 @@ module.exports = {
     11: `Summary: Source file type changed after partial curation & modification of exported file.
         File Status: Partially curated & modified.
         Source Status: File type change since export.
-        This file type and location now matches the source which was exported on {exportDateTime}`
-  }
+        This file type and location now matches the source which was exported on {exportDateTime}`,
+  },
 };
 
 /*

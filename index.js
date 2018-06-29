@@ -1,164 +1,79 @@
 #!/usr/bin/env node
 
-const yargs = require('yargs');
-const { GitUtil, SOURCE_ERROR_STATUS, TARGET_ERROR_STATUS } = require('./utils/git.js');
+const { GitUtil  } = require('./utils/git.js');
 const { FileExporter } = require('./utils/fileExporter.js');
-const { FileOutcomeManager } = require('./utils/fileOutcomeManger.js');
+const { FileStatusManager } = require('./utils/fileStatusManager.js');
 
-/* Parse args */
-const argv = yargs
-  .usage('Usage: test262-automation [engine] [options]')
-  .option('debug')
-  .option('implementation', {
-    alias: 'i',
-    demandOption: true,
-    describe: 'Specify implementor engine...options are jsc',
-    type: 'string',
-  }).argv;
+const { getConfigOptions } = require('./utils/cli.js');
 
+const config = getConfigOptions();
 
-let implementationConfig = argv.implementation;
-let githubConfig = 'github';
-
-if (argv.debug) {
-  process.NODE_ENV = 'DEBUG';
-  implementationConfig = `${implementationConfig}-debug`;
-  githubConfig = `${githubConfig}-debug`;
-}
-
-
-/* Setup Config */
-implementationConfig = require(`./config/implementation/${implementationConfig}.json`); // TODO add config validation method to tie in with CLI
-githubConfig = require(`./config/${githubConfig}.json`);
-
-/* Initialize GitUitl */
-
-const home_directory = process.cwd();
-
-// TODO validate config values b4 init
-
-const gitUtil = new GitUtil({...implementationConfig, ...githubConfig });
+const gitUtil = new GitUtil(config);
 
 try {
-  gitUtil
-    .init()
-    .then(async (data) => {
-      // diffList A (target Head to Sha)
-      const targetDiffList = await gitUtil.diff({
-        options: [
-          '--name-status',
-          data.targetRevisionAtLastExport,
-          'HEAD',
-        ],
-        directory: data.targetRootDir,
-      });
 
-      // diffList B (source HEAD to Sha)
-      const sourceDiffList = await gitUtil.diff({
-        options: [
-          '--name-status',
-          data.sourceRevisionAtLastExport,
-          'HEAD',
-        ],
-        directory: data.sourceRootDir,
-      });
+  (async () => {
 
-      // diffList C (source Sha to Head)
-      const targetAndSourceDiff = await gitUtil.diff({
-        options: [
-          '--no-index',
-          '--name-status',
-          data.targetSubDirectory,
-          data.sourceSubDirectory,
-        ],
-        directory: data.tempDirPath,
-      });
+    const data = await gitUtil.init();
 
-      console.debug('gitUtil', data);
-      console.debug('targetDiffList', targetDiffList);
-      console.debug('sourceDiffList', sourceDiffList);
-      console.debug('targetAndSourceDiff', targetAndSourceDiff);
+    // diffList A (target Head to Sha)
+    const targetDiffList = await gitUtil.diff({
+      options: [
+        '--name-status',
+        data.targetRevisionAtLastExport,
+        'HEAD',
+      ],
+      directory: data.targetRootDir,
+    });
 
-      return {
-        targetRootDir: data.targetRootDir,
-        sourceRootDir: data.sourceRootDir,
-        targetDirectory: data.targetDirectory,
-        sourceDirectory: data.sourceDirectory,
-        sourceExcludes: data.sourceExcludes,
-        tempDirPath: data.tempDirPath,
-        targetDiffList,
-        targetDiffListOutputFile: `${data.tempDirPath}/targetDiffList.json`,
-        sourceDiffList,
-        sourceDiffListOutputFile: `${data.tempDirPath}/sourceDiffList.json`,
-        targetAndSourceDiff,
-        targetAndSourceDiffListOutputFile: `${data.tempDirPath}/targetAndSourceDiffList.json`,
-      };
-    })
-    .then(async (info) => {
-      const targetDirectoryPattern = `${info.targetDirectory}/**`;
-      const sourceDirectoryPattern = `${info.sourceDirectory}/**`;
+    // diffList B (source HEAD to Sha)
+    const sourceDiffList = await gitUtil.diff({
+      options: [
+        '--name-status',
+        data.sourceRevisionAtLastExport,
+        'HEAD',
+      ],
+      directory: data.sourceRootDir,
+    });
 
-      const targetDiffListObj = await gitUtil.createDiffListObj({
-        diffList: info.targetDiffList,
-        includes: [targetDirectoryPattern],
-        directoryPath: info.targetRootDir,
-        excludes: [],
-        errorStatuses: TARGET_ERROR_STATUS,
-      });
+    // diffList C (source Sha to Head)
+    const targetAndSourceDiff = await gitUtil.diff({
+      options: [
+        '--no-index',
+        '--name-status',
+        data.targetSubDirectory,
+        data.sourceSubDirectory,
+      ],
+      directory: data.tempDirPath,
+    });
 
-      const sourceDiffListObj = await gitUtil.createDiffListObj({
-        diffList: info.sourceDiffList,
-        includes: [sourceDirectoryPattern],
-        directoryPath: info.sourceRootDir,
-        excludes: [],
-        errorStatuses: SOURCE_ERROR_STATUS,
-      });
+    const fileStatusManager = new FileStatusManager({
+      tempDirPath: data.tempDirPath,
+      targetRootDir: data.targetRootDir,
+      sourceRootDir: data.sourceRootDir,
+      sourceDirectory: data.sourceDirectory,
+      targetDirectory: data.targetDirectory,
+      sourceExcludes: data.sourceExcludes,
+      targetDiffList,
+      sourceDiffList,
+      targetAndSourceDiff
+    });
 
-      const targetAndSourceDiffListObj = await gitUtil.createDiffListObj({
-        diffList: info.targetAndSourceDiff,
-        includes: [targetDirectoryPattern, sourceDirectoryPattern],
-        directoryPath: info.tempDirPath,
-        excludes: info.sourceExcludes.paths,
-        errorStatuses: [],
-      });
+    const fileOutcomes = await fileStatusManager.init();
 
-      // get the 3 diff lists here and pass them to the newly initialized fileExporter
-      return {
-        targetDiffListObj,
-        sourceDiffListObj,
-        targetAndSourceDiffListObj,
-        targetDirectory: info.targetDirectory,
-        sourceDirectory: info.sourceDirectory,
-      };
-    })
-    .then(async ({
-      targetDiffListObj, sourceDiffListObj, targetAndSourceDiffListObj, targetDirectory, sourceDirectory,
-    }) => {
+    const fileExporter = new FileExporter({
+      curationLogsPath: data.curationLogsPath,
+      sourceDirectory: data.sourceDirectory,
+      targetDirectory: data.targetDirectory,
+      exportDateTime: data.timestampForExport, // TODO format
+      fileOutcomes
+    });
 
-      process.chdir(home_directory);
+    await fileExporter.init();
 
-      const fileOutcomeManager = new FileOutcomeManager({
-        targetDiffListObj,
-        sourceDiffListObj,
-        targetAndSourceDiffListObj,
-        fileExporter: new FileExporter({
-          curationLogsPath: './curation_logs/jsc.json',
-          sourceDirectory,
-          targetDirectory,
-        }),
-      });
+    await gitUtil.commitAndPushRemoteBranch();
 
-     await fileOutcomeManager.init();
-
-      return fileOutcomeManager.fileOutcomes
-    }).then(() => {
-
-    gitUtil.commitAndPushRemoteBranch();
-
-  });
-
-  // TODO add cleanup steps on success for publishing PR
-  // remote temp files and clone
+  })();
 } catch (error) {
-  console.log('Oops error:', error);
+  console.error('ERROR IN INDEX.JS', error);
 }

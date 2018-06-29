@@ -3,6 +3,7 @@
   "newBranchNameForMerge": "jsc-auto-export",
   "targetGit": "git@github.com:nomadtechie/test262.git",
   "targetSubDirectory": "test262/implementation-contributed/jsc",
+  "curationLogsPath": "test262/implementation-contributed/curation_logs/javascriptcore.json",
   "targetRevisionAtLastExport": "a8f7012587250b32ffb43a3cbd8da8a9f9d1565e",
   "targetBranch": "master",
   "sourceGit": "git@github.com:nomadtechie/webkit.git",

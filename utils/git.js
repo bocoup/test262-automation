@@ -1,31 +1,31 @@
 const util = require('util');
 const os = require('os');
 const fs = require('fs');
-
 const fsPromises = fs.promises;
 const path = require('path');
 const makeDir = require('make-dir');
 const { exec, spawn } = require('child_process');
 const get = require('lodash.get');
-const { Readable } = require('stream');
-const readline = require('readline');
-const multimatch = require('multimatch');
 
-const SOURCE_ERROR_STATUS = ['U', 'X'];
-const TARGET_ERROR_STATUS = ['U', 'X', 'A', 'T', 'R'];
+const {
+  FILE_STATUSES: {
+    RENAMED, UNKNOWN, UNMERGED, ADDED, FILE_TYPE_CHANGE,
+  }, NODE_ENV: { DEBUG },
+} = require('./constants.js');
 
-
-const { FILE_STATUSES: { RENAMED } } = require('./constants.js');
+const SOURCE_ERROR_STATUS = [UNMERGED, UNKNOWN];
+const TARGET_ERROR_STATUS = [...SOURCE_ERROR_STATUS, ADDED, FILE_TYPE_CHANGE, RENAMED];
 
 const execCmd = util.promisify(exec);
-
 
 class GitUtil {
   constructor(config) {
     this.tempDirPath = null;
     this.targetRootDir = null;
     this.sourceRootDir = null;
+    this.targetBranch = null;
 
+    this.curationLogsPath = config.curationLogsPath;
     this.newBranchNameForMerge = config.newBranchNameForMerge;
     this.timestampForExport = Date.now(); // TODO add some uniq hash as as well... maybe commit sha;
 
@@ -46,9 +46,10 @@ class GitUtil {
 
     this.t262GithubOrg = config.t262GithubOrg;
     this.t262GitRemote = config.t262GitRemote;
-  }
 
-  init() {
+    }
+
+  async init() {
     return new Promise(async (resolve, reject) => {
       console.info('Initializing clone');
 
@@ -56,6 +57,7 @@ class GitUtil {
 
       process.chdir(newTempDir);
       this.tempDirPath = process.cwd();
+      this.curationLogsPath =  `${this.tempDirPath}/${this.curationLogsPath}`;
 
       console.info(
         `Switched to newly created temp dir: ${this.tempDirPath}`,
@@ -80,28 +82,22 @@ class GitUtil {
         dirName: this.sourceDirName,
       });
 
-      const branchPostFix = process.NODE_ENV === 'DEBUG' ? this.timestampForExport : this.targetRevisionAtLastExport;
-      this.targetBranch = `${this.newBranchNameForMerge}-${branchPostFix}`;
+      this._setTargetBranch();
 
       await this.checkoutBranch({
-        branch: `${this.newBranchNameForMerge}-${branchPostFix}`,
+        branch: this.targetBranch,
         cwd: this.targetRootDir,
       });
 
       await this.checkoutBranch({
-        branch: `${this.newBranchNameForMerge}-${branchPostFix}`,
+        branch: this.targetBranch,
         cwd: this.sourceRootDir,
       });
 
       // Set the full path to the target and source subdirectories
-      this.targetDirectory = `${this.tempDirPath}/${
-        this.targetSubDirectory
-      }`;
-      this.sourceDirectory = `${this.tempDirPath}/${
-        this.sourceSubDirectory
-      }`;
+      this.targetDirectory = `${this.tempDirPath}/${this.targetSubDirectory}`;
+      this.sourceDirectory = `${this.tempDirPath}/${this.sourceSubDirectory}`;
 
-      console.log(this);
       // add target dir if not there
       const targetSubDirectoryExists = await this._checkIfDirectoryExists(this.targetDirectory);
 
@@ -121,6 +117,11 @@ class GitUtil {
 
       resolve(this);
     });
+  }
+
+  _setTargetBranch() {
+    const branchPostFix = process.NODE_ENV === DEBUG ? this.timestampForExport : this.targetRevisionAtLastExport;
+    this.targetBranch = `${this.newBranchNameForMerge}-${branchPostFix}`;
   }
 
   _addTempPathToSubDirectoryExcludes(paths = []) {
@@ -173,7 +174,6 @@ class GitUtil {
   }
 
   async _clean(path) {
-
     await execCmd(`rm -rf ${path}`).then((stdout) => {
       console.info('Removing previous clone...', path);
       console.log(stdout);
@@ -310,116 +310,8 @@ class GitUtil {
     return !!maintainers.size;
   }
 
-  createReadStream(data) {
-    const stream = new Readable({ read() {} });
-    stream.push(data);
-    stream.push(null);
-
-    return stream;
-  }
-
-  getStatusAndPaths({ diffInfoStr, directoryPath }) {
-    let [status, pathA, pathB] = diffInfoStr.split(String.fromCharCode(9));
-
-    // add full directory path
-    pathA = `${directoryPath}/${pathA}`;
-
-    if (pathB) {
-      pathB = `${directoryPath}/${pathB}`;
-    }
-
-    return {
-      status,
-      pathA,
-      pathB,
-    };
-  }
-
-  filterDiffList(params) {
-    const {
-      includes, excludes, pathA, pathB, errorStatuses, status,
-    } = params;
-
-    console.debug('INCOMING excludes', excludes);
-
-    const negatedExcludes = excludes.map(exclusionPattern => `!${exclusionPattern}`);
-    let shouldIncludePath = false;
-
-    console.debug('^^^^^ includes', includes);
-    console.debug('^^^^^^negatedExcludes', negatedExcludes);
-
-    const paths = pathB ? [pathA, pathB] : [pathA];
-
-    console.debug('status', status);
-    console.debug('paths', paths);
-
-    if (multimatch(paths, includes.concat(negatedExcludes)).length) {
-      const invalidStatus = errorStatuses.some(errorStatus => status === errorStatus);
-
-      if (invalidStatus) {
-        throw `INVALID_STATUS: ${status} is an invalid status for paths ${pathA} ${pathB}`;
-      }
-
-      shouldIncludePath = true;
-    }
-
-    console.debug('shouldIncludePath', shouldIncludePath);
-    return shouldIncludePath;
-  }
-
-  createDiffListObj(params) {
-    const {
-      diffList, excludes, includes, directoryPath, errorStatuses,
-    } = params;
-
-    return new Promise((resolve, reject) => {
-      const read = readline.createInterface({
-        input: this.createReadStream(diffList),
-        crlfDelay: Infinity,
-      });
-
-      const diffListObj = {};
-
-      read.on('line', (line) => {
-        const diffInfoStr = String(line);
-
-        const { status, pathA, pathB } = this.getStatusAndPaths({ diffInfoStr, directoryPath });
-
-        const filterOptions = {
-          status,
-          includes,
-          excludes,
-          pathA,
-          pathB,
-          errorStatuses,
-        };
-
-        if (this.filterDiffList(filterOptions)) {
-          if (status[0] === RENAMED) {
-            // old file name as key
-            // state, and new file name as value
-            diffListObj[pathA] = `${status},${pathB}`;
-          } else {
-            diffListObj[pathA] = status;
-          }
-        }
-      });
-
-      read.on('error', (error) => {
-        console.error('ERROR', error);
-        reject(error);
-      });
-
-      read.on('close', () => {
-        console.debug('IN READ CLOSE ######');
-        console.debug('diffListObj', diffListObj);
-        resolve(diffListObj);
-      });
-    });
-  }
-
   async addTargetChanges() {
-    await execCmd(`git add ${this.targetDirectory}`);
+    await execCmd(`git add ${this.targetDirectory} ${this.curationLogsPath}`);
     console.info('Added changes in target directory...', this.targetDirectory);
   }
 
