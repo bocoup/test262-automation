@@ -15,10 +15,10 @@ describe('Github Util', () => {
   });
   const config = {
     githubToken: token,
-    t252GithubOrg: 'tc39',
-    t252GithubRepoName: 'test262',
-    t252BaseBranch: 'master',
-    t252GithubUsername: 'test262-automation',
+    t262GithubOrg: 'tc39',
+    t262GithubRepoName: 'test262',
+    t262BaseBranch: 'master',
+    t262GithubUsername: 'test262-automation',
   };
 
   let fetch,
@@ -27,7 +27,7 @@ describe('Github Util', () => {
     fetch = jest.fn(() => Promise.resolve({ status: 200, json: () => ({ api: 'response' }) }));
     GitHub.__set__('fetch', fetch);
 
-    gitHub = new GitHub(config, fetch);
+    gitHub = new GitHub(config);
   });
 
   test('throws an assertion if there is no github token', () => {
@@ -36,10 +36,12 @@ describe('Github Util', () => {
     }).toThrow('No github token found');
   });
 
-  describe('#postRequest', () => {
-    test('resolves with the json returned by github when the status is 200', () => expect(gitHub.postRequest({})).resolves.toEqual({
-      api: 'response',
-    }));
+  describe('#request', function() {
+    test('resolves with the json returned by github when the status is 200', () => {
+      return expect(gitHub.request({})).resolves.toEqual({
+        api: 'response'
+      });
+    });
 
     test('rejects with the json response when the status code is not 200', () => {
       const fetch = jest.fn(() => Promise.resolve({
@@ -49,8 +51,8 @@ describe('Github Util', () => {
       GitHub.__set__('fetch', fetch);
       const gitHub = new GitHub(config, fetch);
 
-      return expect(gitHub.postRequest({})).rejects.toEqual({
-        message: 'Validation Failed',
+      return expect(gitHub.request({})).rejects.toEqual({
+        message: 'Validation Failed'
       });
     });
   });

@@ -445,6 +445,8 @@ class GitUtil {
     await this.commit();
     await this.addRemote();
     await this.pushRemoteBranch();
+
+    return this.targetBranch;
   }
 }
 

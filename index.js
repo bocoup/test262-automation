@@ -4,11 +4,16 @@ const yargs = require('yargs');
 const { GitUtil, SOURCE_ERROR_STATUS, TARGET_ERROR_STATUS } = require('./utils/git.js');
 const { FileExporter } = require('./utils/fileExporter.js');
 const { FileOutcomeManager } = require('./utils/fileOutcomeManger.js');
+const { createPrManager } = require('./utils/pullRequestManager.js')
 
 /* Parse args */
 const argv = yargs
   .usage('Usage: test262-automation [engine] [options]')
   .option('debug')
+  .option('pull-request', {
+    alias: 'p',
+    default: false
+  })
   .option('implementation', {
     alias: 'i',
     demandOption: true,
@@ -151,11 +156,25 @@ try {
      await fileOutcomeManager.init();
 
       return fileOutcomeManager.fileOutcomes
-    }).then(() => {
+    }).then(async (outcomes) => {
 
-    gitUtil.commitAndPushRemoteBranch();
+      const branch = await gitUtil.commitAndPushRemoteBranch();
 
-  });
+      if (argv.pullRequest) {
+        const prManager = createPrManager({
+          ghConfig: githubConfig,
+          implConfig: implementationConfig
+        });
+
+        return prManager.pushPullRequest({
+          branchName: branch,
+          sourceSha: '', // TODO pass in data.sourceRevisionAtLastExport
+          targetSha: '', // TODO pass in data.targetRevisionAtLastExport
+          implementatorName: implementationConfig.implementatorName,
+          outcomes
+        });
+      }
+    });
 
   // TODO add cleanup steps on success for publishing PR
   // remote temp files and clone

@@ -1,6 +1,9 @@
 {
   "license": "Apple",
+  "implementatorName": "JavaScriptCore",
   "newBranchNameForMerge": "jsc-auto-export",
+  "pullRequestLabels": [],
+  "pullRequestTitle": "Import test changes from JavaScriptCore",
   "targetGit": "git@github.com:nomadtechie/test262.git",
   "targetSubDirectory": "test262/implementation-contributed/jsc",
   "targetRevisionAtLastExport": "a8f7012587250b32ffb43a3cbd8da8a9f9d1565e",
