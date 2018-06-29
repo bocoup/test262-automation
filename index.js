@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const yargs = require('yargs');
+const pick = require('lodash.pick');
 const { GitUtil, SOURCE_ERROR_STATUS, TARGET_ERROR_STATUS } = require('./utils/git.js');
 const { FileExporter } = require('./utils/fileExporter.js');
 const { FileOutcomeManager } = require('./utils/fileOutcomeManger.js');
@@ -35,6 +36,16 @@ if (argv.debug) {
 /* Setup Config */
 implementationConfig = require(`./config/implementation/${implementationConfig}.json`); // TODO add config validation method to tie in with CLI
 githubConfig = require(`./config/${githubConfig}.json`);
+
+implementationConfig = {
+  ...implementationConfig,
+  ...pick(argv, Object.keys(implementationConfig))
+}
+
+githubConfig = {
+  ...githubConfig,
+  ...pick(argv, Object.keys(githubConfig))
+}
 
 /* Initialize GitUitl */
 
