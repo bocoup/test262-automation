@@ -191,6 +191,7 @@ class GitUtil {
         'git',
         [
           'clone',
+          'depth=50',
           '--single-branch',
           `--branch=${branch}`,
           gitRemote,

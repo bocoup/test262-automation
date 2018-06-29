@@ -10,7 +10,7 @@
   "targetBranch": "master",
   "sourceGit": "https://github.com/webkit/webkit.git",
   "sourceSubDirectory": "mock-webkit/JSTests",
-  "sourceRevisionAtLastExport": "949e26452cfa153a7f4afe593da97e2fe9e1b706",
+  "sourceRevisionAtLastExport": "0cef6dcea5a",
   "sourceBranch": "master",
   "sourceExcludes": {
     "foundInFile": ["$vm", "amalsTest"],
