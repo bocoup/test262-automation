@@ -52,7 +52,6 @@ class GitUtil {
   async init() {
     return new Promise(async (resolve, reject) => {
       console.info('Initializing clone');
-
       const newTempDir = await fsPromises.mkdtemp(os.tmpdir());
 
       process.chdir(newTempDir);
@@ -192,6 +191,7 @@ class GitUtil {
         'git',
         [
           'clone',
+          '--depth=100',
           '--single-branch',
           `--branch=${branch}`,
           gitRemote,
