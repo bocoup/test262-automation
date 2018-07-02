@@ -1,4 +1,9 @@
 const yargs = require('yargs');
+const fs = require('fs')
+
+const choices = fs.readdirSync('./config/implementation/')
+      .map(file => file.replace(/\.json$/, ''))
+      .filter(file => !file.endsWith('-debug'));
 
 function getImplemationConfigOptions() {
 
@@ -17,8 +22,9 @@ function getConfigOptions() {
     .option('implementation', {
       alias: 'i',
       demandOption: true,
-      describe: 'Specify implementor engine...options are jsc',
+      describe: 'Specify implementor engine',
       type: 'string',
+      choices,
     }).argv;
 
   let implementationConfig = argv.implementation;
