@@ -1,7 +1,7 @@
 {
   "license": "Debug",
   "newBranchNameForMerge": "jsc-debug-auto-export",
-  "targetGit": "git@github.com:test262-automation/mock-test262.git",
+  "targetGit": "https://github.com/test262-automation/mock-test262.git",
   "targetSubDirectory": "mock-test262/implementation-contributed/javascriptcore",
   "curationLogsPath": "mock-test262/implementation-contributed/curation_logs/javascriptcore.json",
   "implementatorName": "JavaScriptCore (Debug)",
@@ -9,7 +9,7 @@
   "pullRequestTitle": "Import test changes from JavaScriptCore (Debug)",
   "targetRevisionAtLastExport": "1418889",
   "targetBranch": "master",
-  "sourceGit": "git@github.com:test262-automation/mock-webkit.git",
+  "sourceGit": "https://github.com/test262-automation/mock-webkit.git",
   "sourceSubDirectory": "mock-webkit/JSTests",
   "sourceRevisionAtLastExport": "1a4026b7",
   "sourceBranch": "master",
