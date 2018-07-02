@@ -1,21 +1,18 @@
 {
   "license": "Apple",
-  "newBranchNameForMerge": "jsc-auto-export",
-  "targetGit": "git@github.com:nomadtechie/test262.git",
+  "targetGit": "git@github.com:tc39/test262.git",
   "targetSubDirectory": "test262/implementation-contributed/jsc",
   "curationLogsPath": "test262/implementation-contributed/curation_logs/javascriptcore.json",
-  "implementatorName": "JavaScriptCore",
+  "implementatorName": "javascriptcore",
+  "implementatorDisplayName": "JavaScriptCore",
   "pullRequestLabels": [],
   "pullRequestTitle": "Import test changes from JavaScriptCore",
-  "targetRevisionAtLastExport": "a8f7012587250b32ffb43a3cbd8da8a9f9d1565e",
   "targetBranch": "master",
   "sourceGit": "git@github.com:nomadtechie/webkit.git",
   "sourceSubDirectory": "webkit/JSTests",
-  "sourceRevisionAtLastExport": "a7edaf986c5d81fb1d289cd2fa187c27a89cd1d6",
-  "sourceBranch": "deleted_branches",
+  "sourceBranch": "master",
   "sourceExcludes": {
-    "foundInFile": ["$vm", "amalsTest"],
-    "TODOS": [ "prefix", "rename to patterns"],
+    "foundInFile": [" $vm" ],
     "paths": [ "mozilla/**" , "ChakraCore/**",  "ChangeLog", "*.yaml" , "microbenmarks", "test262/**"]
   }
 }

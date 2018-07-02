@@ -3,30 +3,17 @@ module.exports = {
   NODE_ENV: {
     DEBUG: 'DEBUG',
   },
-
-  /*
-  *
-  *
-  *
-  *
-  * */
   FILE_STATUSES: {
     ADDED: 'A',
     DELETED: 'D',
     MODIFIED: 'M',
-    RENAMED: 'R', // TODO add tech debt issue for R %'s ex R74, R100, R20
+    RENAMED: 'R',
+    ONLY_RENAMED: 'R100',
     FILE_TYPE_CHANGE: 'T',
     UNMERGED: 'U',
     UNKNOWN: 'X',
     NO_CHANGE: 'N', // Note: this is NOT a git status, but a status we attribute if there is no change found for a file an the target or source repo
   },
-
-  /*
-  *
-  *
-  *
-  *
-  * */
   STATUS_SCENARIOS: { // TODO add notes here to explain statuses
     DA: 4, // would happen if it was previously deleted in source and then deleted in target and re-added in source at the time of comparision
     DD: 0,
