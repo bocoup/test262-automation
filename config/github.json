@@ -4,5 +4,6 @@
   "t262BaseBranch": "master",
   "t262GithubUsername": "test262-automation",
   "t262GitRemote": "git@github.com:test262-automation/test262.git",
-  "githubToken": null
+  "githubToken": null,
+  "newBranchNameForMerge": "test262-automation-export"
 }

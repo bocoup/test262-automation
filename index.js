@@ -73,8 +73,11 @@ try {
 
     await fileExporter.init();
 
-    await gitUtil.commitAndPushRemoteBranch();
+    await gitUtil.commitFileChangesAndPushRemoteBranch();
 
+    await gitUtil.updateCurationLogsRevisionShas();
+
+    await gitUtil.commitUpdatedCurationLogs();
 
     if (argv.pullRequest) {
       const prManager = createPrManager({
@@ -88,7 +91,7 @@ try {
         targetSha: '', // TODO pass in data.targetRevisionAtLastExport
         implementatorName: implementationConfig.implementatorName,
         outcomes: fileOutcomes
-      });
+      }).catch(error => console.error(`PR ERROR:`, error));
     }
 
   })();

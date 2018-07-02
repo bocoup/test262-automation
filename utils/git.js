@@ -6,6 +6,7 @@ const path = require('path');
 const makeDir = require('make-dir');
 const { exec, spawn } = require('child_process');
 const get = require('lodash.get');
+const pick = require('lodash.pick');
 
 const {
   FILE_STATUSES: {
@@ -24,19 +25,20 @@ class GitUtil {
     this.targetRootDir = null;
     this.sourceRootDir = null;
     this.targetBranch = null;
+    this.targetRevisionAtLastExport = null;
+    this.sourceRevisionAtLastExport = null;
 
-    this.curationLogsPath = config.curationLogsPath;
+    this.implementatorName = config.implementatorName;
+    this.curationLogsPath = config.curationLogsPath; // this gets updated with the full path
     this.newBranchNameForMerge = config.newBranchNameForMerge;
     this.timestampForExport = Date.now(); // TODO add some uniq hash as as well... maybe commit sha;
 
     this.targetSubDirectory = config.targetSubDirectory;
-    this.targetRevisionAtLastExport = config.targetRevisionAtLastExport;
     this.targetDirName = config.targetSubDirectory.split('/')[0];
     this.targetGit = config.targetGit;
     this.targetBranch = config.targetBranch;
 
     this.sourceSubDirectory = config.sourceSubDirectory;
-    this.sourceRevisionAtLastExport = config.sourceRevisionAtLastExport;
     this.sourceDirName = config.sourceSubDirectory.split('/')[0];
     this.sourceExcludes = {
       paths: get(config.sourceExcludes, 'paths', []),
@@ -56,7 +58,6 @@ class GitUtil {
 
       process.chdir(newTempDir);
       this.tempDirPath = process.cwd();
-      this.curationLogsPath =  `${this.tempDirPath}/${this.curationLogsPath}`;
 
       console.info(
         `Switched to newly created temp dir: ${this.tempDirPath}`,
@@ -67,7 +68,7 @@ class GitUtil {
         this.targetDirName,
       );
 
-      this._cleanIfDirectoryExists(pathToPreviousClone);
+      await this._cleanIfDirectoryExists(pathToPreviousClone);
 
       this.targetRootDir = await this.clone({
         gitRemote: this.targetGit,
@@ -80,6 +81,11 @@ class GitUtil {
         branch: this.sourceBranch,
         dirName: this.sourceDirName,
       });
+
+      const revisions = await this._getRevisionShasFromCurationLogs();
+
+      this.sourceRevisionAtLastExport = revisions.sourceRevisionAtLastExport;
+      this.targetRevisionAtLastExport = revisions.targetRevisionAtLastExport;
 
       this._setTargetBranch();
 
@@ -118,9 +124,18 @@ class GitUtil {
     });
   }
 
+
+  async _getRevisionShasFromCurationLogs() {
+    this.curationLogsPath =  `${this.tempDirPath}/${this.curationLogsPath}`;
+
+    const curationLogsData = JSON.parse(await fsPromises.readFile(this.curationLogsPath));
+
+    return  pick(curationLogsData, [ 'targetRevisionAtLastExport', 'sourceRevisionAtLastExport']);
+  }
+
   _setTargetBranch() {
     const branchPostFix = process.NODE_ENV === DEBUG ? this.timestampForExport : this.targetRevisionAtLastExport;
-    this.targetBranch = `${this.newBranchNameForMerge}-${branchPostFix}`;
+    this.targetBranch = `${this.implementatorName}-${this.newBranchNameForMerge}-${branchPostFix}`;
   }
 
   _addTempPathToSubDirectoryExcludes(paths = []) {
@@ -310,14 +325,34 @@ class GitUtil {
     return !!maintainers.size;
   }
 
-  async addTargetChanges() {
-    await execCmd(`git add ${this.targetDirectory} ${this.curationLogsPath}`);
-    console.info('Added changes in target directory...', this.targetDirectory);
+  async getLastRevisionSha({ directory, branch }) {
+    process.chdir(directory);
+    const lastRevisionSha = await execCmd(`git rev-list ${branch} --max-count=1`);
+    console.info(`Last revision sha for branch ${branch} for directory ${lastRevisionSha.stdout}`);
+    return lastRevisionSha.stdout;
   }
 
-  async commit() {
-    const commitMessage = `[IMPLEMENTATION-PREFIX] changes from source at sha ${this.sourceRevisionAtLastExport} on ${this.timestampForExport}`;
-    await execCmd(`git commit -m "${commitMessage}"`);
+  async updateCurationLogsRevisionShas() {
+    const sourceRevisionAtLastExport = await this.getLastRevisionSha({ directory: this.targetRootDir, branch: this.targetBranch });
+    const targetRevisionAtLastExport =  await this.getLastRevisionSha({ directory: this.sourceRootDir, branch: this.targetBranch });
+
+    const curationLogsData = JSON.parse(await fsPromises.readFile(this.curationLogsPath));
+
+    Object.assign(curationLogsData, {
+      sourceRevisionAtLastExport,
+      targetRevisionAtLastExport
+    });
+
+    await fsPromises.writeFile(this.curationLogsPath, JSON.stringify(curationLogsData, null, 2));
+  }
+
+  async addChanges(path) {
+    await execCmd(`git add ${path}`);
+    console.info('Added changes in target directory...',path);
+  }
+
+  async commit(commitMessage) {
+    await execCmd(`git commit -m  "${`[${this.implementatorName}-test262-automation] ${commitMessage}`}"`);
     console.info('Commited changes with message....', commitMessage);
   }
 
@@ -331,11 +366,21 @@ class GitUtil {
     console.info('Pushing to remote branch ....', this.targetBranch);
   }
 
-  async commitAndPushRemoteBranch() {
+  async commitFileChangesAndPushRemoteBranch() {
     process.chdir(this.targetRootDir);
-    await this.addTargetChanges();
-    await this.commit();
+    await this.addChanges(this.targetDirectory);
+    await this.commit(`changes from ${this.sourceGit} at sha ${this.sourceRevisionAtLastExport} on ${this.timestampForExport}`);
     await this.addRemote();
+    await this.pushRemoteBranch();
+  }
+
+  async commitUpdatedCurationLogs() {
+    // TODO make this optional only if changes are made in the curation log
+    process.chdir(this.targetRootDir);
+    console.log('WORDKIN DIR', process.cwd());
+    console.log('WORDKIN curationLogsPath', this.curationLogsPath);
+    await this.addChanges(this.curationLogsPath);
+    await this.commit(`updated curation log`);
     await this.pushRemoteBranch();
   }
 }
