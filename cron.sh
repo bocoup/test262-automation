@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-node index.js --pull-request --implementation jsc $@
+TMPDIR="./tmp" node index.js --pull-request --implementation jsc $@
