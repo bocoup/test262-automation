@@ -1,6 +1,6 @@
 {
   "license": "Apple",
-  "targetGit": "git@github.com:tc39/test262.git",
+  "targetGit": "https://github.com/tc39/test262.git",
   "targetSubDirectory": "test262/implementation-contributed/javascriptcore",
   "curationLogsPath": "test262/implementation-contributed/curation_logs/javascriptcore.json",
   "implementerName": "javascriptcore",
@@ -8,7 +8,7 @@
   "pullRequestLabels": [],
   "pullRequestTitle": "Import test changes from JavaScriptCore",
   "targetBranch": "master",
-  "sourceGit": "git@github.com:WebKit/webkit.git",
+  "sourceGit": "https://github.com/webkit/webkit.git",
   "sourceSubDirectory": "webkit/JSTests",
   "sourceBranch": "master",
   "sourceExcludes": {
