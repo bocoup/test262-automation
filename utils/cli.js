@@ -1,10 +1,11 @@
 const yargs = require('yargs');
 const pick = require('lodash.pick');
+const fs = require('fs');
 
-function getImplemationConfigOptions() {
+const choices = fs.readdirSync('./config/implementation/')
+      .map(file => file.replace(/\.json$/, ''))
+      .filter(file => !file.endsWith('-debug'));
 
-  // TODO add config validation method to tie in with CLI
-}
 
 function getConfigOptions() {
 
@@ -18,8 +19,9 @@ function getConfigOptions() {
     .option('implementation', {
       alias: 'i',
       demandOption: true,
-      describe: 'Specify implementor engine...options are jsc',
+      describe: 'Specify implementor engine',
       type: 'string',
+      choices,
     })
     .options({
       // The following options override the github config

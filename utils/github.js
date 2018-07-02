@@ -87,7 +87,7 @@ class GitHub {
       method,
     });
 
-    if (response.status === 200) {
+    if (response.status < 300) {
       return response.json();
     }
     // The Github API is pretty good about always returning json
