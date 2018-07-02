@@ -5,6 +5,8 @@ node_js:
 jobs:
   include:
     - script: npm run test
-    - script: ./cron.sh
-      if: type IN (cron)
+    - script: ./cron.sh --t262-git-remote "https://$GITHUB_TOKEN@github.com/test262-automation/test262.git"
+      if: type IN (cron) AND branch = master
+    - script: ./cron.sh --t262-git-remote "https://$GITHUB_TOKEN@github.com/test262-automation/test262.git" --debug
+      if: type IN (cron) AND NOT branch = master
 
