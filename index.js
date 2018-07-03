@@ -67,7 +67,7 @@ try {
       curationLogsPath: data.curationLogsPath,
       sourceDirectory: data.sourceDirectory,
       targetDirectory: data.targetDirectory,
-      exportDateTime: data.timestampForExport, // TODO format
+      exportDateTime: new Date(data.timestampForExport), // TODO format
       fileOutcomes
     });
 

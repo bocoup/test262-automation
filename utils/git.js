@@ -372,11 +372,11 @@ class GitUtil {
 
   async addRemote() {
     await execCmd(`git remote add ${this.t262GithubOrg} ${this.t262GitRemote}`, { cwd: this.targetDirectory });
-    console.info('Added remote of remote....', this.t262GitRemote);
+    console.info(`Added remote of remote....${this.t262GitRemote} as ${this.t262GithubOrg}`);
   }
 
   async pushRemoteBranch() {
-    await execCmd(`git push ${this.t262GitRemote} ${this.targetBranch}`);
+    await execCmd(`git push ${this.t262GithubOrg} ${this.targetBranch}`);
     console.info('Pushing to remote branch ....', this.targetBranch);
   }
 
@@ -384,7 +384,7 @@ class GitUtil {
     process.chdir(this.targetRootDir);
     console.log('WORDKIN DIR 1', process.cwd());
     await this.addChanges();
-    await this.commit(`changes from ${this.sourceGit} at sha ${this.sourceRevisionAtLastExport} on ${this.timestampForExport}`);
+    await this.commit(`changes from ${this.sourceGit} at sha ${this.sourceRevisionAtLastExport} on ${new Date(this.timestampForExport)}`);
     await this.addRemote();
     await this.pushRemoteBranch();
   }
