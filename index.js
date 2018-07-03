@@ -87,8 +87,8 @@ try {
 
       await prManager.pushPullRequest({
         branchName: gitUtil.targetBranch,
-        sourceSha: '', // TODO pass in data.sourceRevisionAtLastExport
-        targetSha: '', // TODO pass in data.targetRevisionAtLastExport
+        sourceSha:  data.sourceRevisionAtLastExport,
+        targetSha: data.targetRevisionAtLastExport,
         implementerName: implementationConfig.implementerDisplayName,
         outcomes: fileOutcomes
       }).catch(error => console.error(`PR ERROR:`, error));
