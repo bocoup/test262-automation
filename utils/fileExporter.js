@@ -28,7 +28,12 @@ const appendFile = util.promisify(fs.appendFile);
 const unlink = util.promisify(fs.unlink);
 const rename = util.promisify(fs.rename);
 
+function exportFiles() {
+
+}
+
 class FileExporter {
+
   constructor(params) {
     this.curationLogsPath = params.curationLogsPath;
     this.sourceDirectory = params.sourceDirectory;

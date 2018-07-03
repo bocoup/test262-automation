@@ -1,18 +1,18 @@
 {
   "license": "Apple",
   "targetGit": "git@github.com:tc39/test262.git",
-  "targetSubDirectory": "test262/implementation-contributed/jsc",
+  "targetSubDirectory": "test262/implementation-contributed/javascriptcore",
   "curationLogsPath": "test262/implementation-contributed/curation_logs/javascriptcore.json",
-  "implementatorName": "javascriptcore",
-  "implementatorDisplayName": "JavaScriptCore",
+  "implementerName": "javascriptcore",
+  "implementerDisplayName": "JavaScriptCore",
   "pullRequestLabels": [],
   "pullRequestTitle": "Import test changes from JavaScriptCore",
   "targetBranch": "master",
-  "sourceGit": "git@github.com:nomadtechie/webkit.git",
+  "sourceGit": "git@github.com:WebKit/webkit.git",
   "sourceSubDirectory": "webkit/JSTests",
   "sourceBranch": "master",
   "sourceExcludes": {
     "foundInFile": [" $vm" ],
-    "paths": [ "mozilla/**" , "ChakraCore/**",  "ChangeLog", "*.yaml" , "microbenmarks", "test262/**"]
+    "paths": [ "mozilla/**" , "ChakraCore/**",  "ChangeLog", "*.yaml" , "microbenchmarks/**", "test262/**" ]
   }
 }

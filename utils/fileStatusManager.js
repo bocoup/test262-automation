@@ -188,13 +188,8 @@ class FileStatusManager {
     const negatedExcludes = excludes.map(exclusionPattern => `!${exclusionPattern}`);
     let shouldIncludePath = false;
 
-    console.debug('^^^^^ includes', includes);
-    console.debug('^^^^^^negatedExcludes', negatedExcludes);
 
     const paths = pathB ? [pathA, pathB] : [pathA];
-
-    console.debug('status', status);
-    console.debug('paths', paths);
 
     if (multimatch(paths, includes.concat(negatedExcludes)).length) {
       const invalidStatus = errorStatuses.some(errorStatus => status === errorStatus);
@@ -206,7 +201,7 @@ class FileStatusManager {
       shouldIncludePath = true;
     }
 
-    console.debug('shouldIncludePath', shouldIncludePath);
+    console.debug(`shouldIncludePath ? ${shouldIncludePath} ${paths}`);
     return shouldIncludePath;
   }
 
@@ -317,7 +312,8 @@ class FileStatusManager {
           this.fileOutcomes[statusScenario].files.push(baseFilePath);
         }
       } else {
-        throw new Error(`UNSUPPORTED_SCENARIO: statusScenario is ${statusScenario} for file ${filePath}`);
+        console.log(`UNSUPPORTED_SCENARIO: statusScenario is ${statusScenario} for file ${filePath}`);
+        // throw new Error(`UNSUPPORTED_SCENARIO: statusScenario is ${statusScenario} for file ${filePath}`);
       }
     });
 

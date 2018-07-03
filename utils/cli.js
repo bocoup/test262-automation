@@ -10,7 +10,7 @@ const choices = fs.readdirSync('./config/implementation/')
 function getConfigOptions() {
 
   const argv = yargs
-    .usage('Usage: test262-automation [engine] [options]')
+    .usage('Usage: test262-automation -implementation [implementation] [options]')
     .option('debug')
     .option('pull-request', {
       alias: 'p',

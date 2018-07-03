@@ -3,8 +3,8 @@
 const { GitUtil  } = require('./utils/git.js');
 const { FileExporter } = require('./utils/fileExporter.js');
 const { FileStatusManager } = require('./utils/fileStatusManager.js');
-const { createPrManager } = require('./utils/pullRequestManager.js')
 
+const { createPrManager } = require('./utils/pullRequestManager.js');
 
 const { getConfigOptions } = require('./utils/cli.js');
 

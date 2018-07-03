@@ -1,7 +1,7 @@
 {
   "name": "test262-automation",
   "version": "0.0.1",
-  "description": "Scripts for automating test contributions from JS implemation repos into test262",
+  "description": "Scripts for automating test contributions from JS implemation repositories into test262",
   "main": "index.js",
   "bin": {
     "test262-automation": "index.js"
@@ -14,7 +14,7 @@
     "type": "git",
     "url": "git+https://github.com/bocoup/test262-automation.git"
   },
-  "author": "",
+  "author": "Bocoup LLC",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/bocoup/test262-automation/issues"

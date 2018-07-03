@@ -20,6 +20,7 @@ const TARGET_ERROR_STATUS = [...SOURCE_ERROR_STATUS, ADDED, FILE_TYPE_CHANGE, RE
 const execCmd = util.promisify(exec);
 
 class GitUtil {
+
   constructor(config) {
     this.tempDirPath = null;
     this.targetRootDir = null;
@@ -52,16 +53,13 @@ class GitUtil {
     }
 
   async init() {
-    return new Promise(async (resolve, reject) => {
       console.info('Initializing clone');
       const newTempDir = await fsPromises.mkdtemp(os.tmpdir());
 
       process.chdir(newTempDir);
       this.tempDirPath = process.cwd();
 
-      console.info(
-        `Switched to newly created temp dir: ${this.tempDirPath}`,
-      );
+      console.info(`Switched to newly created temp dir: ${this.tempDirPath}`);
 
       const pathToPreviousClone = path.join(
         this.tempDirPath,
@@ -100,7 +98,7 @@ class GitUtil {
       });
 
       // Set the full path to the target and source subdirectories
-      this.targetDirectory = `${this.tempDirPath}/${this.targetSubDirectory}`;
+      this.targetDirectory = `${this.tempDirPath}/${this.targetSubDirectory}`; // TODO use node path join
       this.sourceDirectory = `${this.tempDirPath}/${this.sourceSubDirectory}`;
 
       // add target dir if not there
@@ -118,10 +116,7 @@ class GitUtil {
 
       this._addTempPathToSubDirectoryExcludes(this.sourceExcludes.paths);
 
-      process.chdir(this.tempDirPath);
-
-      resolve(this);
-    });
+      return this;
   }
 
 
@@ -202,26 +197,15 @@ class GitUtil {
 
       // TODO add support for cloning into . dirName
       // TODO add options to support local dev for setting depth
-      const clone = spawn(
-        'git',
-        [
-          'clone',
-          '--depth=100',
-          '--single-branch',
-          `--branch=${branch}`,
-          gitRemote,
-        ],
-        { stdio: 'inherit' },
-      );
+      const clone = spawn('git', [ 'clone', '--depth=100', '--single-branch', `--branch=${branch}`, gitRemote ], { stdio: 'inherit' , cwd: this.tempDirPath });
 
-      process.stderr.on('error', (data) => {
-        console.error(`stderr: ${data}`);
-        reject();
+      process.on('error', error => {
+        reject(error);
       });
 
-      clone.on('exit', () => {
-        console.info(`Completed clone of ${gitRemote}`);
-        resolve(path.join(process.cwd(), dirName));
+      clone.on('exit', code => {
+        code === 0 ? resolve(path.join(process.cwd(), dirName)) : reject(`Failed with code ${code}`);
+        console.info(`Completed clone of ${gitRemote}`); // TODO make an if
       });
     });
   }
@@ -237,7 +221,7 @@ class GitUtil {
         stdio: 'inherit',
       });
 
-      process.stderr.on('error', (data) => {
+      process.on('error', (data) => {
         console.error(`stderr: ${data}`);
         reject();
       });
@@ -261,7 +245,7 @@ class GitUtil {
     console.info('CURRENT DIRECTORY', process.cwd());
 
     return new Promise((resolve, reject) => {
-      const diff = spawn('git', ['diff', ...options]);
+      const diff = spawn('git', ['diff', ...options], { cwd: directory });
 
       diff.stdout.on('data', (data) => {
         console.debug('%%%%%%%%%%% CALLED DATA');
@@ -346,29 +330,60 @@ class GitUtil {
     await fsPromises.writeFile(this.curationLogsPath, JSON.stringify(curationLogsData, null, 2));
   }
 
-  async addChanges(path) {
-    await execCmd(`git add ${path}`);
-    console.info('Added changes in target directory...',path);
+  async addChanges() {
+    return new Promise((resolve, reject) => {
+
+      const add = spawn('git', ['add', this.targetDirectory, this.curationLogsPath], {
+        stdio: 'inherit',
+        cwd: this.targetDirectory
+      });
+
+      process.on('error', (data) => {
+        console.error(`stderr: ${data}`);
+        reject();
+      });
+
+      add.on('exit', () => {
+        console.info(`Added changes in target directory...${this.targetDirectory}`);
+        resolve();
+      });
+    });
   }
 
   async commit(commitMessage) {
-    await execCmd(`git commit -m  "${`[${this.implementatorName}-test262-automation] ${commitMessage}`}"`);
-    console.info('Commited changes with message....', commitMessage);
+
+    return new Promise((resolve, reject) => {
+      const commit = spawn('git', ['commit', '-m', `"[${this.implementatorName}-test262-automation] ${commitMessage}`], {
+        stdio: 'inherit',
+        cwd: this.targetDirectory
+      });
+
+      process.on('error', (data) => {
+        console.error(`stderr: ${data}`);
+        reject();
+      });
+
+      commit.on('exit', () => {
+        console.info('Commited changes with message....', commitMessage);
+        resolve();
+      });
+    });
   }
 
   async addRemote() {
-    await execCmd(`git remote add ${this.t262GithubOrg} ${this.t262GitRemote}`);
+    await execCmd(`git remote add ${this.t262GithubOrg} ${this.t262GitRemote}`, { cwd: this.targetDirectory });
     console.info('Added remote of remote....', this.t262GitRemote);
   }
 
   async pushRemoteBranch() {
-    await execCmd(`git push ${this.t262GithubOrg} ${this.targetBranch}`);
+    await execCmd(`git push ${this.t262GitRemote} ${this.targetBranch}`);
     console.info('Pushing to remote branch ....', this.targetBranch);
   }
 
   async commitFileChangesAndPushRemoteBranch() {
     process.chdir(this.targetRootDir);
-    await this.addChanges(this.targetDirectory);
+    console.log('WORDKIN DIR 1', process.cwd());
+    await this.addChanges();
     await this.commit(`changes from ${this.sourceGit} at sha ${this.sourceRevisionAtLastExport} on ${this.timestampForExport}`);
     await this.addRemote();
     await this.pushRemoteBranch();
@@ -377,10 +392,9 @@ class GitUtil {
   async commitUpdatedCurationLogs() {
     // TODO make this optional only if changes are made in the curation log
     process.chdir(this.targetRootDir);
-    console.log('WORDKIN DIR', process.cwd());
-    console.log('WORDKIN curationLogsPath', this.curationLogsPath);
-    await this.addChanges(this.curationLogsPath);
-    await this.commit(`updated curation log`);
+    console.log('WORDKIN DIR 2', process.cwd());
+    await this.addChanges();
+    await this.commit(`updated curation log with latest revision sha's from export`);
     await this.pushRemoteBranch();
   }
 }

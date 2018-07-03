@@ -36,15 +36,15 @@ class OutcomeReporter {
     return subDir.slice(subDir.indexOf('/') + 1)
   }
 
-  renderHeading({implementatorName, sourceSha, targetSha}) {
+  renderHeading({implementerName, sourceSha, targetSha}) {
     let match = /\:([^.]+)./.exec(this.implConfig.targetGit)
     let targetGithub = match ? match[1] : ''
 
     return stripIndent`
-      # Import JavaScript Test Changes from ${implementatorName}
+      # Import JavaScript Test Changes from ${implementerNameimplementerName}
 
       Changes imported in this pull request include all changes made since
-      [${sourceSha}](https://github.com/${targetGithub}/blob/${sourceSha}) in ${implementatorName} and all changes made since [${targetSha}](../blob/${targetSha}) in
+      [${sourceSha}](https://github.com/${targetGithub}/blob/${sourceSha}) in ${implementerName} and all changes made since [${targetSha}](../blob/${targetSha}) in
       test262.
 `.trim()
   }
@@ -55,12 +55,12 @@ class OutcomeReporter {
     }).join('\n');
   }
 
-  renderSubSection(sectionId, sectionInfo, implementatorName, branch) {
+  renderSubSection(sectionId, sectionInfo, implementerName, branch) {
     let templates = OutcomeReporter.TEMPLATES[sectionId];
     let context = {
       fileCount: sectionInfo.files.length,
-      implementatorName: implementatorName,
       contribDirectory: this.contribDirectory,
+      implementerName
     };
 
     if (!sectionInfo.files.length) {
@@ -80,14 +80,14 @@ ${this.renderFileList(sectionInfo.files, branch)}
     branch,
     sourceSha,
     targetSha,
-    implementatorName,
+    implementerName,
     outcomes
   }) {
     let sections = Object.entries(outcomes).map(([sectionId, section]) => {
-      return this.renderSubSection(sectionId, section, implementatorName, branch);
+      return this.renderSubSection(sectionId, section, implementerName, branch);
     });
     return stripIndent`
-${this.renderHeading({sourceSha, targetSha, implementatorName})}
+${this.renderHeading({sourceSha, targetSha, implementerName})}
 
 ${sections.join('\n')}
 `.trim()
@@ -108,20 +108,20 @@ OutcomeReporter.pluralize = pluralize;
 /*
   Template variables:
   `fileCount` the number of files in the sub section.
-  `implementatorName` the name of the implementatorName that is being synced
-  `contribDirectory` the path to the implementor-contributed directory for this implementatorName.
+  `implementerName` the name of the implementerName that is being synced
+  `contribDirectory` the path to the implementor-contributed directory for this implementerName.
 */
 OutcomeReporter.TEMPLATES = {
   [DO_NOT_EXPORT]: {
-    subTitle: ({fileCount, implementatorName, contribDirectory}) => `${fileCount} Ignored ${pluralize("File", fileCount)}`,
+    subTitle: ({fileCount, implementerName, contribDirectory}) => `${fileCount} Ignored ${pluralize("File", fileCount)}`,
     description: ({fileCount, implementatorName, contribDirectory}) => stripIndent`
       These files were updated or added in the ${implementatorName} repo but they
       are not synced to test262 because they are excluded.
 `.trim()
   },
   [DO_NOT_EXPORT_AND_BLOCK_FUTURE_EXPORTS]: {
-    subTitle: ({fileCount, implementatorName, contribDirectory}) => `${fileCount} ${pluralize("File", fileCount)} Classified as Fully Curated`,
-    description: ({fileCount, implementatorName, contribDirectory}) => stripIndent`
+    subTitle: ({fileCount, implementerName, contribDirectory}) => `${fileCount} ${pluralize("File", fileCount)} Classified as Fully Curated`,
+    description: ({fileCount, implementerName, contribDirectory}) => stripIndent`
       These files will be ignored in future imports.
 `.trim()
   },
@@ -140,7 +140,7 @@ OutcomeReporter.TEMPLATES = {
 `.trim()
   },
   [RE_EXPORT_SOURCE_WITH_NOTE_ON_PREVIOUS_TARGET_DELETION]: {
-    subTitle: ({fileCount, implementatorName, contribDirectory}) => `${fileCount} ${pluralize("File", fileCount)} Were Previously Curated Have Been Updated in {{implementatorName}}`,
+    subTitle: ({fileCount, implementatorName: implementerName, contribDirectory}) => `${fileCount} ${pluralize("File", fileCount)} Were Previously Curated Have Been Updated in {{implementatorName}}`,
     description: ({fileCount, implementatorName, contribDirectory}) => stripIndent`
       These files have been reintroduced into the \`${contribDirectory}\`
       directory with a comment specifying they were previously curated and

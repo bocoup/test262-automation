@@ -13,7 +13,7 @@ class PullRequestManager {
     branchName,
     sourceSha,
     targetSha,
-    implementatorName,
+    implementerName,
     outcomes
   }) {
     let pullRequest = await this.uploadPullRequest({
@@ -23,7 +23,7 @@ class PullRequestManager {
         branch: branchName,
         sourceSha,
         targetSha,
-        implementatorName,
+        implementerName,
         outcomes
       })
     });

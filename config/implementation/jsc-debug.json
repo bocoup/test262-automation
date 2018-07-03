@@ -1,5 +1,5 @@
 {
-  "license": "Debug",
+  "license": "Apple",
   "targetGit": "https://github.com/test262-automation/mock-test262.git",
   "targetSubDirectory": "mock-test262/implementation-contributed/javascriptcore",
   "curationLogsPath": "mock-test262/implementation-contributed/curation_logs/javascriptcore.json",
@@ -13,6 +13,6 @@
   "sourceBranch": "master",
   "sourceExcludes": {
     "foundInFile": [ "$vm" ],
-    "paths": [ "mozilla/**" , "ChakraCore/**",  "ChangeLog", "*.yaml" , "microbenmarks" , "test262/**"]
+    "paths": [ "mozilla/**" , "ChakraCore/**",  "ChangeLog", "*.yaml" , "microbenchmarks/**" , "test262/**"]
   }
 }
