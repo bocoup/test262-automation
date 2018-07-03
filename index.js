@@ -62,36 +62,43 @@ try {
     });
 
     const fileOutcomes = await fileStatusManager.init();
+    const foundChangedFiles = Object.keys(fileOutcomes).some(outcome => fileOutcomes[outcome].files.length > 0);
 
-    const fileExporter = new FileExporter({
-      curationLogsPath: data.curationLogsPath,
-      sourceDirectory: data.sourceDirectory,
-      targetDirectory: data.targetDirectory,
-      exportDateTime: new Date(data.timestampForExport), // TODO format
-      fileOutcomes
-    });
+    if(foundChangedFiles) {
 
-    await fileExporter.init();
-
-    await gitUtil.commitFileChangesAndPushRemoteBranch();
-
-    await gitUtil.updateCurationLogsRevisionShas();
-
-    await gitUtil.commitUpdatedCurationLogs();
-
-    if (argv.pullRequest) {
-      const prManager = createPrManager({
-        ghConfig: githubConfig,
-        implConfig: implementationConfig
+      const fileExporter = new FileExporter({
+        curationLogsPath: data.curationLogsPath,
+        sourceDirectory: data.sourceDirectory,
+        targetDirectory: data.targetDirectory,
+        exportDateTime: new Date(data.timestampForExport),
+        fileOutcomes
       });
 
-      await prManager.pushPullRequest({
-        branchName: gitUtil.targetBranch,
-        sourceSha:  data.sourceRevisionAtLastExport,
-        targetSha: data.targetRevisionAtLastExport,
-        implementerName: implementationConfig.implementerDisplayName,
-        outcomes: fileOutcomes
-      }).catch(error => console.error(`PR ERROR:`, error));
+      await fileExporter.init();
+
+      await gitUtil.commitFileChangesAndPushRemoteBranch();
+
+      await gitUtil.updateCurationLogsRevisionShas();
+
+      await gitUtil.commitUpdatedCurationLogs();
+
+      if (argv.pullRequest) {
+        const prManager = createPrManager({
+          ghConfig: githubConfig,
+          implConfig: implementationConfig
+        });
+
+        await prManager.pushPullRequest({
+          branchName: gitUtil.targetBranch,
+          sourceSha:  data.sourceRevisionAtLastExport,
+          targetSha: data.targetRevisionAtLastExport,
+          implementerName: implementationConfig.implementerDisplayName,
+          outcomes: fileOutcomes
+        }).catch(error => console.error(`PR ERROR:`, error));
+      }
+
+    } else {
+      console.info('Found no changes to export');
     }
 
   })();

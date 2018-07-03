@@ -206,7 +206,7 @@ OutcomeReporter.TEMPLATES = {
 `.trim()
   },
   [UPDATE_EXTENSION_ON_TARGET_FILE]: {
-    subTitle: ({fileCount, implementerName, contribDirectory}) => `${fileCount} ${pluralize("File", fileCount)} with ther Extension Updated`,
+    subTitle: ({fileCount, implementerName, contribDirectory}) => `${fileCount} ${pluralize("File", fileCount)} with their Extension Updated`,
     description: ({fileCount, implementerName, contribDirectory}) => ``
   },
 }

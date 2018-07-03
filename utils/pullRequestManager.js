@@ -9,23 +9,23 @@ class PullRequestManager {
     this.reporter = reporter;
   }
 
-  async pushPullRequest({
-    branchName,
-    sourceSha,
-    targetSha,
-    implementerName,
-    outcomes
-  }) {
+  async pushPullRequest({branchName, sourceSha, targetSha, implementerName, outcomes}) {
+    let body = this.reporter.generateReport({
+      branch: branchName,
+      sourceSha,
+      targetSha,
+      implementerName,
+      outcomes
+    });
+
+    if(body.length > 6000){
+      body = body.slice(0, 5999).concat(".......report too long for Github. Review Travis log for full output of changes files.")
+    }
+
     let pullRequest = await this.uploadPullRequest({
       branchName,
       title: this.implConfig.pullRequestTitle,
-      body: this.reporter.generateReport({
-        branch: branchName,
-        sourceSha,
-        targetSha,
-        implementerName,
-        outcomes
-      })
+      body
     });
 
     await this.github.addLabel({
