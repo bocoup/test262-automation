@@ -89,7 +89,7 @@ try {
         branchName: gitUtil.targetBranch,
         sourceSha: '', // TODO pass in data.sourceRevisionAtLastExport
         targetSha: '', // TODO pass in data.targetRevisionAtLastExport
-        implementatorName: implementationConfig.implementatorName,
+        implementerName: implementationConfig.implementerDisplayName,
         outcomes: fileOutcomes
       }).catch(error => console.error(`PR ERROR:`, error));
     }

@@ -26,7 +26,7 @@ describe('OutcomeReporter', function() {
     });
 
     expect(reporter.renderHeading({
-      implementatorName: 'jsc',
+      implementerName: 'jsc',
       sourceSha: 'abc',
       targetSha: '123',
     }))
@@ -77,7 +77,7 @@ are not synced to test262 because they are excluded.
       branch: 'my-branch',
       sourceSha: '123',
       targetSha: 'abc',
-      implementatorName: 'jsc',
+      implementerName: 'jsc',
       outcomes: { '0': { files: ['/a.js']}}
     }))
       .toBe(`

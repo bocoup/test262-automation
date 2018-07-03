@@ -29,7 +29,7 @@ class GitUtil {
     this.targetRevisionAtLastExport = null;
     this.sourceRevisionAtLastExport = null;
 
-    this.implementatorName = config.implementatorName;
+    this.implementerName = config.implementerName;
     this.curationLogsPath = config.curationLogsPath; // this gets updated with the full path
     this.newBranchNameForMerge = config.newBranchNameForMerge;
     this.timestampForExport = Date.now(); // TODO add some uniq hash as as well... maybe commit sha;
@@ -130,7 +130,7 @@ class GitUtil {
 
   _setTargetBranch() {
     const branchPostFix = process.NODE_ENV === DEBUG ? this.timestampForExport : this.targetRevisionAtLastExport;
-    this.targetBranch = `${this.implementatorName}-${this.newBranchNameForMerge}-${branchPostFix}`;
+    this.targetBranch = `${this.implementerName}-${this.newBranchNameForMerge}-${branchPostFix}`;
   }
 
   _addTempPathToSubDirectoryExcludes(paths = []) {
@@ -353,7 +353,7 @@ class GitUtil {
   async commit(commitMessage) {
 
     return new Promise((resolve, reject) => {
-      const commit = spawn('git', ['commit', '-m', `"[${this.implementatorName}-test262-automation] ${commitMessage}`], {
+      const commit = spawn('git', ['commit', '-m', `"[${this.implementerName}-test262-automation] ${commitMessage}`], {
         stdio: 'inherit',
         cwd: this.targetDirectory
       });
