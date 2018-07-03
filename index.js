@@ -1,21 +1,19 @@
 #!/usr/bin/env node
 
-const { GitUtil  } = require('./utils/git.js');
+const { GitUtil } = require('./utils/git.js');
 const { FileExporter } = require('./utils/fileExporter.js');
 const { FileStatusManager } = require('./utils/fileStatusManager.js');
-const { createPrManager } = require('./utils/pullRequestManager.js')
 
+const { createPrManager } = require('./utils/pullRequestManager.js');
 
 const { getConfigOptions } = require('./utils/cli.js');
 
 const { argv, implementationConfig, githubConfig } = getConfigOptions();
 
-const gitUtil = new GitUtil({...implementationConfig, ...githubConfig });
+const gitUtil = new GitUtil({ ...implementationConfig, ...githubConfig });
 
 try {
-
   (async () => {
-
     const data = await gitUtil.init();
 
     // diffList A (target Head to Sha)
@@ -58,42 +56,46 @@ try {
       sourceExcludes: data.sourceExcludes,
       targetDiffList,
       sourceDiffList,
-      targetAndSourceDiff
+      targetAndSourceDiff,
     });
 
     const fileOutcomes = await fileStatusManager.init();
+    const foundChangedFiles = Object.keys(fileOutcomes).some(outcome => fileOutcomes[outcome].files.length > 0);
 
-    const fileExporter = new FileExporter({
-      curationLogsPath: data.curationLogsPath,
-      sourceDirectory: data.sourceDirectory,
-      targetDirectory: data.targetDirectory,
-      exportDateTime: data.timestampForExport, // TODO format
-      fileOutcomes
-    });
-
-    await fileExporter.init();
-
-    await gitUtil.commitFileChangesAndPushRemoteBranch();
-
-    await gitUtil.updateCurationLogsRevisionShas();
-
-    await gitUtil.commitUpdatedCurationLogs();
-
-    if (argv.pullRequest) {
-      const prManager = createPrManager({
-        ghConfig: githubConfig,
-        implConfig: implementationConfig
+    if (foundChangedFiles) {
+      const fileExporter = new FileExporter({
+        curationLogsPath: data.curationLogsPath,
+        sourceDirectory: data.sourceDirectory,
+        targetDirectory: data.targetDirectory,
+        exportDateTime: new Date(data.timestampForExport),
+        fileOutcomes,
       });
 
-      await prManager.pushPullRequest({
-        branchName: gitUtil.targetBranch,
-        sourceSha: '', // TODO pass in data.sourceRevisionAtLastExport
-        targetSha: '', // TODO pass in data.targetRevisionAtLastExport
-        implementatorName: implementationConfig.implementatorName,
-        outcomes: fileOutcomes
-      }).catch(error => console.error(`PR ERROR:`, error));
-    }
+      await fileExporter.init();
 
+      await gitUtil.commitFileChangesAndPushRemoteBranch();
+
+      await gitUtil.updateCurationLogsRevisionShas();
+
+      await gitUtil.commitUpdatedCurationLogs();
+
+      if (argv.pullRequest) {
+        const prManager = createPrManager({
+          ghConfig: githubConfig,
+          implConfig: implementationConfig,
+        });
+
+        await prManager.pushPullRequest({
+          branchName: gitUtil.targetBranch,
+          sourceSha: data.sourceRevisionAtLastExport,
+          targetSha: data.targetRevisionAtLastExport,
+          implementerName: implementationConfig.implementerDisplayName,
+          outcomes: fileOutcomes,
+        }).catch(error => console.error('PR ERROR:', error));
+      }
+    } else {
+      console.info('Found no changes to export');
+    }
   })();
 } catch (error) {
   console.error('ERROR IN INDEX.JS', error);

@@ -3,29 +3,31 @@
    add labels and do some simple error handeling.
  */
 class PullRequestManager {
-  constructor({implConfig, github, reporter}) {
+  constructor({ implConfig, github, reporter }) {
     this.implConfig = implConfig;
     this.github = github;
     this.reporter = reporter;
   }
 
   async pushPullRequest({
-    branchName,
-    sourceSha,
-    targetSha,
-    implementatorName,
-    outcomes
+    branchName, sourceSha, targetSha, implementerName, outcomes,
   }) {
-    let pullRequest = await this.uploadPullRequest({
+    let body = this.reporter.generateReport({
+      branch: branchName,
+      sourceSha,
+      targetSha,
+      implementerName,
+      outcomes,
+    });
+
+    if (body.length > 6000) {
+      body = body.slice(0, 5999).concat('.......report too long for Github. Review Travis log for full output of changes files.');
+    }
+
+    const pullRequest = await this.uploadPullRequest({
       branchName,
       title: this.implConfig.pullRequestTitle,
-      body: this.reporter.generateReport({
-        branch: branchName,
-        sourceSha,
-        targetSha,
-        implementatorName,
-        outcomes
-      })
+      body,
     });
 
     await this.github.addLabel({
@@ -39,20 +41,19 @@ class PullRequestManager {
   // Opens a new pull requests or updates an existing one
   async uploadPullRequest(params) {
     try {
-      return await this.github.openPullRequest(params)
+      return await this.github.openPullRequest(params);
     } catch (e) {
-      const message = e.errors && e.errors[0] && e.errors[0].message
+      const message = e.errors && e.errors[0] && e.errors[0].message;
       if (/A pull request already exists/.exec(message)) {
-        return await this.github.updatePullRequest(params)
-      } else {
-        throw e;
+        return await this.github.updatePullRequest(params);
       }
+      throw e;
     }
   }
 }
 
 
-function createPrManager({ghConfig, implConfig}) {
+function createPrManager({ ghConfig, implConfig }) {
   const GitHub = require('./github');
   const OutcomeReporter = require('./outcomeReporter');
 
