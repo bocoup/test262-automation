@@ -1,6 +1,7 @@
 const fs = require('fs');
 const util = require('util');
 const cpFile = require('cp-file');
+
 const fsPromises = fs.promises;
 const { EXPORT_MESSAGES, FILE_OUTCOMES } = require('./constants.js');
 
@@ -28,12 +29,8 @@ const appendFile = util.promisify(fs.appendFile);
 const unlink = util.promisify(fs.unlink);
 const rename = util.promisify(fs.rename);
 
-function exportFiles() {
-
-}
 
 class FileExporter {
-
   constructor(params) {
     this.curationLogsPath = params.curationLogsPath;
     this.sourceDirectory = params.sourceDirectory;
@@ -65,7 +62,7 @@ class FileExporter {
             return await this.exportModifiedSourceWithNoteOnTargetDeletion({ files, outcome });
 
           case RE_EXPORT_RENAMED_SOURCE_WITH_NOTE_ON_PREVIOUS_TARGET_DELETION:
-            return await this.reExportRenamedSourceWithSourceWithNoteOnDeletion({ files , outcome });
+            return await this.reExportRenamedSourceWithSourceWithNoteOnDeletion({ files, outcome });
 
           case DELETE_TARGET_FILE:
             return await this.deleteTargetFile({ files, outcome });
@@ -80,7 +77,7 @@ class FileExporter {
           case EXPORT_FILE:
             return await this.exportFile({ files, outcome });
           default:
-           throw new Error('NO OUTCOME FOUND');
+            throw new Error('NO OUTCOME FOUND');
         }
       }
     });
@@ -100,7 +97,7 @@ class FileExporter {
 
   async reExportRenamedSourceWithSourceWithNoteOnDeletion({ files, outcome }) {
     files.forEach(async (filePath) => {
-      const [renameWithPercent, oldFilePath, newFilePath ] = filePath.split(',');
+      const [renameWithPercent, oldFilePath, newFilePath] = filePath.split(',');
       await this._copySourceFileToTarget(newFilePath);
       const appendData = await this._getExportMessage({ outcome });
       await this._appendToTargetFile({ appendData, filePath: newFilePath });

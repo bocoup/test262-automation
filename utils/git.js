@@ -1,6 +1,7 @@
 const util = require('util');
 const os = require('os');
 const fs = require('fs');
+
 const fsPromises = fs.promises;
 const path = require('path');
 const makeDir = require('make-dir');
@@ -20,7 +21,6 @@ const TARGET_ERROR_STATUS = [...SOURCE_ERROR_STATUS, ADDED, FILE_TYPE_CHANGE, RE
 const execCmd = util.promisify(exec);
 
 class GitUtil {
-
   constructor(config) {
     this.tempDirPath = null;
     this.targetRootDir = null;
@@ -49,83 +49,82 @@ class GitUtil {
 
     this.t262GithubOrg = config.t262GithubOrg;
     this.t262GitRemote = config.t262GitRemote;
-
-    }
+  }
 
   async init() {
-      console.info('Initializing clone');
-      const newTempDir = await fsPromises.mkdtemp(os.tmpdir());
+    console.info('Initializing clone');
+    const newTempDir = await fsPromises.mkdtemp(os.tmpdir());
 
-      process.chdir(newTempDir);
-      this.tempDirPath = process.cwd();
+    process.chdir(newTempDir);
+    this.tempDirPath = process.cwd();
 
-      console.info(`Switched to newly created temp dir: ${this.tempDirPath}`);
+    console.info(`Switched to newly created temp dir: ${this.tempDirPath}`);
 
-      const pathToPreviousClone = path.join(
-        this.tempDirPath,
-        this.targetDirName,
-      );
+    const pathToPreviousClone = path.join(
+      this.tempDirPath,
+      this.targetDirName,
+    );
 
-      await this._cleanIfDirectoryExists(pathToPreviousClone);
+    await this._cleanIfDirectoryExists(pathToPreviousClone);
 
-      this.targetRootDir = await this.clone({
-        gitRemote: this.targetGit,
-        branch: this.targetBranch,
-        dirName: this.targetDirName,
-      });
+    this.targetRootDir = await this.clone({
+      gitRemote: this.targetGit,
+      branch: this.targetBranch,
+      dirName: this.targetDirName,
+    });
 
-      this.sourceRootDir = await this.clone({
-        gitRemote: this.sourceGit,
-        branch: this.sourceBranch,
-        dirName: this.sourceDirName,
-      });
+    this.sourceRootDir = await this.clone({
+      gitRemote: this.sourceGit,
+      branch: this.sourceBranch,
+      dirName: this.sourceDirName,
+    });
 
-      const revisions = await this._getRevisionShasFromCurationLogs();
+    const revisions = await this._getRevisionShasFromCurationLogs();
 
-      this.sourceRevisionAtLastExport = revisions.sourceRevisionAtLastExport;
-      this.targetRevisionAtLastExport = revisions.targetRevisionAtLastExport;
+    this.sourceRevisionAtLastExport = revisions.sourceRevisionAtLastExport;
+    this.targetRevisionAtLastExport = revisions.targetRevisionAtLastExport;
 
-      this._setTargetBranch();
+    this._setTargetBranch();
 
-      await this.checkoutBranch({
-        branch: this.targetBranch,
-        cwd: this.targetRootDir,
-      });
+    await this.checkoutBranch({
+      branch: this.targetBranch,
+      cwd: this.targetRootDir,
+    });
 
-      await this.checkoutBranch({
-        branch: this.targetBranch,
-        cwd: this.sourceRootDir,
-      });
+    await this.checkoutBranch({
+      branch: this.targetBranch,
+      cwd: this.sourceRootDir,
+    });
 
-      // Set the full path to the target and source subdirectories
-      this.targetDirectory = `${this.tempDirPath}/${this.targetSubDirectory}`; // TODO use node path join
-      this.sourceDirectory = `${this.tempDirPath}/${this.sourceSubDirectory}`;
+    // Set the full path to the target and source subdirectories
+    this.targetDirectory = `${this.tempDirPath}/${this.targetSubDirectory}`; // TODO use node path join
+    this.sourceDirectory = `${this.tempDirPath}/${this.sourceSubDirectory}`;
 
-      // add target dir if not there
-      const targetSubDirectoryExists = await this._checkIfDirectoryExists(this.targetDirectory);
+    // add target dir if not there
+    const targetSubDirectoryExists = await this._checkIfDirectoryExists(this.targetDirectory);
 
-      if (!targetSubDirectoryExists) {
-        console.debug('targetSubDirectoryExists', targetSubDirectoryExists);
+    if (!targetSubDirectoryExists) {
+      console.debug('targetSubDirectoryExists', targetSubDirectoryExists);
 
-        process.chdir(this.targetRootDir);
+      process.chdir(this.targetRootDir);
 
-        console.info(`Switched to target cwd...${process.cwd()}`);
+      console.info(`Switched to target cwd...${process.cwd()}`);
 
-        await this._createDirectory(this.targetDirectory);
-      }
+      await this._createDirectory(this.targetDirectory);
+    }
 
-      this._addTempPathToSubDirectoryExcludes(this.sourceExcludes.paths);
+    this._addTempPathToSubDirectoryExcludes(this.sourceExcludes.paths);
 
-      return this;
+    return this;
   }
 
 
   async _getRevisionShasFromCurationLogs() {
-    this.curationLogsPath =  `${this.tempDirPath}/${this.curationLogsPath}`;
+    this.curationLogsPath = `${this.tempDirPath}/${this.curationLogsPath}`;
 
     const curationLogsData = JSON.parse(await fsPromises.readFile(this.curationLogsPath));
 
-    return  pick(curationLogsData, [ 'targetRevisionAtLastExport', 'sourceRevisionAtLastExport']);
+    return pick(curationLogsData, ['targetRevisionAtLastExport', 'sourceRevisionAtLastExport']);
   }
 
   _setTargetBranch() {
@@ -197,13 +196,13 @@ class GitUtil {
 
       // TODO add support for cloning into . dirName
       // TODO add options to support local dev for setting depth
-      const clone = spawn('git', [ 'clone', '--depth=100', '--single-branch', `--branch=${branch}`, gitRemote ], { stdio: 'inherit' , cwd: this.tempDirPath });
+      const clone = spawn('git', ['clone', '--depth=100', '--single-branch', `--branch=${branch}`, gitRemote], { stdio: 'inherit', cwd: this.tempDirPath });
 
-      process.on('error', error => {
+      process.on('error', (error) => {
         reject(error);
       });
 
-      clone.on('exit', code => {
+      clone.on('exit', (code) => {
         code === 0 ? resolve(path.join(process.cwd(), dirName)) : reject(`Failed with code ${code}`);
         console.info(`Completed clone of ${gitRemote}`); // TODO make an if
       });
@@ -318,13 +317,13 @@ class GitUtil {
 
   async updateCurationLogsRevisionShas() {
     const sourceRevisionAtLastExport = await this.getLastRevisionSha({ directory: this.targetRootDir, branch: this.targetBranch });
-    const targetRevisionAtLastExport =  await this.getLastRevisionSha({ directory: this.sourceRootDir, branch: this.targetBranch });
+    const targetRevisionAtLastExport = await this.getLastRevisionSha({ directory: this.sourceRootDir, branch: this.targetBranch });
 
     const curationLogsData = JSON.parse(await fsPromises.readFile(this.curationLogsPath));
 
     Object.assign(curationLogsData, {
       sourceRevisionAtLastExport,
-      targetRevisionAtLastExport
+      targetRevisionAtLastExport,
     });
 
     await fsPromises.writeFile(this.curationLogsPath, JSON.stringify(curationLogsData, null, 2));
@@ -332,10 +331,9 @@ class GitUtil {
 
   async addChanges() {
     return new Promise((resolve, reject) => {
-
       const add = spawn('git', ['add', this.targetDirectory, this.curationLogsPath], {
         stdio: 'inherit',
-        cwd: this.targetDirectory
+        cwd: this.targetDirectory,
       });
 
       process.on('error', (data) => {
@@ -351,11 +349,10 @@ class GitUtil {
   }
 
   async commit(commitMessage) {
-
     return new Promise((resolve, reject) => {
       const commit = spawn('git', ['commit', '-m', `"[${this.implementerName}-test262-automation] ${commitMessage}`], {
         stdio: 'inherit',
-        cwd: this.targetDirectory
+        cwd: this.targetDirectory,
       });
 
       process.on('error', (data) => {
@@ -394,7 +391,7 @@ class GitUtil {
     process.chdir(this.targetRootDir);
     console.log('WORDKIN DIR 2', process.cwd());
     await this.addChanges();
-    await this.commit(`updated curation log with latest revision sha's from export`);
+    await this.commit('updated curation log with latest revision sha\'s from export');
     await this.pushRemoteBranch();
   }
 }

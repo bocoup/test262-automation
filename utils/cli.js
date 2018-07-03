@@ -3,18 +3,17 @@ const pick = require('lodash.pick');
 const fs = require('fs');
 
 const choices = fs.readdirSync('./config/implementation/')
-      .map(file => file.replace(/\.json$/, ''))
-      .filter(file => !file.endsWith('-debug'));
+  .map(file => file.replace(/\.json$/, ''))
+  .filter(file => !file.endsWith('-debug'));
 
 
 function getConfigOptions() {
-
   const argv = yargs
     .usage('Usage: test262-automation -implementation [implementation] [options]')
     .option('debug')
     .option('pull-request', {
       alias: 'p',
-      default: false
+      default: false,
     })
     .option('implementation', {
       alias: 'i',
@@ -61,7 +60,7 @@ function getConfigOptions() {
       },
       'source-branch': {
         describe: 'The branch to sync changes from',
-      }
+      },
     }).argv;
 
   let implementationConfig = argv.implementation;
@@ -80,12 +79,12 @@ function getConfigOptions() {
 
   implementationConfig = {
     ...implementationConfig,
-    ...pick(argv, Object.keys(implementationConfig))
+    ...pick(argv, Object.keys(implementationConfig)),
   };
 
   githubConfig = {
     ...githubConfig,
-    ...pick(argv, Object.keys(githubConfig))
+    ...pick(argv, Object.keys(githubConfig)),
   };
 
   return {

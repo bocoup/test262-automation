@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { GitUtil  } = require('./utils/git.js');
+const { GitUtil } = require('./utils/git.js');
 const { FileExporter } = require('./utils/fileExporter.js');
 const { FileStatusManager } = require('./utils/fileStatusManager.js');
 
@@ -10,12 +10,10 @@ const { getConfigOptions } = require('./utils/cli.js');
 
 const { argv, implementationConfig, githubConfig } = getConfigOptions();
 
-const gitUtil = new GitUtil({...implementationConfig, ...githubConfig });
+const gitUtil = new GitUtil({ ...implementationConfig, ...githubConfig });
 
 try {
-
   (async () => {
-
     const data = await gitUtil.init();
 
     // diffList A (target Head to Sha)
@@ -58,20 +56,19 @@ try {
       sourceExcludes: data.sourceExcludes,
       targetDiffList,
       sourceDiffList,
-      targetAndSourceDiff
+      targetAndSourceDiff,
     });
 
     const fileOutcomes = await fileStatusManager.init();
     const foundChangedFiles = Object.keys(fileOutcomes).some(outcome => fileOutcomes[outcome].files.length > 0);
 
-    if(foundChangedFiles) {
-
+    if (foundChangedFiles) {
       const fileExporter = new FileExporter({
         curationLogsPath: data.curationLogsPath,
         sourceDirectory: data.sourceDirectory,
         targetDirectory: data.targetDirectory,
         exportDateTime: new Date(data.timestampForExport),
-        fileOutcomes
+        fileOutcomes,
       });
 
       await fileExporter.init();
@@ -85,22 +82,20 @@ try {
       if (argv.pullRequest) {
         const prManager = createPrManager({
           ghConfig: githubConfig,
-          implConfig: implementationConfig
+          implConfig: implementationConfig,
         });
 
         await prManager.pushPullRequest({
           branchName: gitUtil.targetBranch,
-          sourceSha:  data.sourceRevisionAtLastExport,
+          sourceSha: data.sourceRevisionAtLastExport,
           targetSha: data.targetRevisionAtLastExport,
           implementerName: implementationConfig.implementerDisplayName,
-          outcomes: fileOutcomes
-        }).catch(error => console.error(`PR ERROR:`, error));
+          outcomes: fileOutcomes,
+        }).catch(error => console.error('PR ERROR:', error));
       }
-
     } else {
       console.info('Found no changes to export');
     }
-
   })();
 } catch (error) {
   console.error('ERROR IN INDEX.JS', error);

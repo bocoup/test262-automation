@@ -1,4 +1,4 @@
-let fetch = require('isomorphic-fetch');
+const fetch = require('isomorphic-fetch');
 const assert = require('assert');
 
 const T262_GH_ORG = Symbol('T262_GH_ORG');
@@ -28,8 +28,8 @@ class GitHub {
      POST /repos/:owner/:repo/pulls
      https://developer.github.com/v3/pulls/#create-a-pull-request
   */
-  openPullRequest({branchName, title, body}) {
-    let head = `${this[GITHUB_USERNAME]}:${branchName}`;
+  openPullRequest({ branchName, title, body }) {
+    const head = `${this[GITHUB_USERNAME]}:${branchName}`;
     return this.request({
       method: 'POST',
       path: `/repos/${this[T262_GH_ORG]}/${this[T262_GH_REPO_NAME]}/pulls`,
@@ -43,9 +43,9 @@ class GitHub {
     });
   }
 
-  async updatePullRequest({branchName, title, body}) {
+  async updatePullRequest({ branchName, title, body }) {
     const head = `${this[GITHUB_USERNAME]}:${branchName}`;
-    const pullRequest = await this.request({      
+    const pullRequest = await this.request({
       path: `/repos/${this[T262_GH_ORG]}/${this[T262_GH_REPO_NAME]}/pulls?head=${head}`,
     })[0];
 
@@ -56,7 +56,7 @@ class GitHub {
       body: {
         title,
         body,
-      }
+      },
     });
   }
 
@@ -66,7 +66,7 @@ class GitHub {
      POST /repos/:owner/:repo/issues/:number/labels
      https://developer.github.com/v3/issues/labels/#add-labels-to-an-issue
   */
-  addLabel({number, labels}) {
+  addLabel({ number, labels }) {
     return this.request({
       method: 'POST',
       path: `/repos/${this[T262_GH_ORG]}/${this[T262_GH_REPO_NAME]}/issues/${number}/labels`,
@@ -74,7 +74,7 @@ class GitHub {
     });
   }
 
-  async request({path, body, method='GET'}) {
+  async request({ path, body, method = 'GET' }) {
     const headers = {
       Authorization: `token ${this[GITHUB_TOKEN]}`,
       Accept: 'application/vnd.github.v3+json',
