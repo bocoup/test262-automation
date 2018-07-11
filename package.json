@@ -15,7 +15,7 @@
     "url": "git+https://github.com/bocoup/test262-automation.git"
   },
   "author": "Bocoup LLC",
-  "license": "MIT",
+  "license": "BSD-2-Clause",
   "bugs": {
     "url": "https://github.com/bocoup/test262-automation/issues"
   },
