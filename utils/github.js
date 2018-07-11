@@ -1,4 +1,4 @@
-const fetch = require('isomorphic-fetch');
+let fetch = require('isomorphic-fetch');
 const assert = require('assert');
 
 const T262_GH_ORG = Symbol('T262_GH_ORG');
