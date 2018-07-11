@@ -1,4 +1,8 @@
-# test262-automation
+# Test262-Automation
+
+[![Travis Build Status](https://travis-ci.org/bocoup/test262-automation.svg?branch=master)](https://travis-ci.org/bocoup/test262-automation)
+
+
 Automation scripts for exporting implementor tests into test262
 
 ### Usage
