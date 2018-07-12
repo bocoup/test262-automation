@@ -36,7 +36,7 @@ class OutcomeReporter {
   }
 
   renderHeading({ implementerName, sourceSha, targetSha }) {
-    const match = /\:([^.]+)./.exec(this.implConfig.targetGit);
+    const match = /:([^.]+)./.exec(this.implConfig.targetGit);
     const targetGithub = match ? match[1] : '';
 
     return stripIndent`
@@ -106,6 +106,8 @@ OutcomeReporter.pluralize = pluralize;
   `implementerName` the name of the implementerName that is being synced
   `contribDirectory` the path to the implementor-contributed directory for this implementerName.
 */
+
+/* eslint-disable no-unused-vars */
 OutcomeReporter.TEMPLATES = {
   [DO_NOT_EXPORT]: {
     subTitle: ({ fileCount, implementerName, contribDirectory }) => `${fileCount} Ignored ${pluralize('File', fileCount)}`,

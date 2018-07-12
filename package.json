@@ -7,8 +7,9 @@
     "test262-automation": "index.js"
   },
   "scripts": {
-    "test": "jest",
-    "cron": "./cron.sh"
+    "cron": "./cron.sh",
+    "lint": "eslint index.js utils/*",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -32,9 +33,7 @@
     "yargs": "^11.0.0"
   },
   "devDependencies": {
-    "eslint": "^4.19.1",
-    "eslint-config-airbnb-base": "^13.0.0",
-    "eslint-plugin-import": "^2.13.0",
+    "eslint": "^5.1.0",
     "jest": "^23.1.0",
     "rewire": "^4.0.1"
   }

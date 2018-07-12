@@ -2,7 +2,6 @@ const fs = require('fs');
 const util = require('util');
 const cpFile = require('cp-file');
 
-const fsPromises = fs.promises;
 const { EXPORT_MESSAGES, FILE_OUTCOMES } = require('./constants.js');
 
 const {
@@ -12,16 +11,12 @@ const {
   APPEND_MODIFIED_TARGET_WITH_NOTE_AND_NEW_SOURCE,
   RE_EXPORT_SOURCE_WITH_NOTE_ON_PREVIOUS_TARGET_DELETION,
   RE_EXPORT_RENAMED_SOURCE_WITH_NOTE_ON_PREVIOUS_TARGET_DELETION,
-  RE_EXPORT_SOURCE_NEW_EXTENSION_WITH_NOTE_ON_PREVIOUS_TARGET_DELETION_AND_EXTENSION,
   DELETE_TARGET_FILE,
   RENAME_TARGET_FILE,
   APPEND_MODIFIED_TARGET_WITH_NOTE_ON_SOURCE_DELETION,
   RENAME_MODIFIED_TARGET_FILE_WITH_NOTE_ON_RENAME,
-  UPDATE_EXTENSION_ON_MODIFIED_TARGET_FILE_WITH_NOTE_ON_EXTENSION_CHANGE,
   EXPORT_FILE,
-  UPDATE_EXTENSION_ON_TARGET_FILE,
 } = FILE_OUTCOMES;
-
 
 const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
@@ -97,7 +92,11 @@ class FileExporter {
 
   async reExportRenamedSourceWithSourceWithNoteOnDeletion({ files, outcome }) {
     files.forEach(async (filePath) => {
-      const [renameWithPercent, oldFilePath, newFilePath] = filePath.split(',');
+      const [
+        /* renameWithPercent is unused */,
+        /* oldFilePath is unused */,
+        newFilePath
+      ] = filePath.split(',');
       await this._copySourceFileToTarget(newFilePath);
       const appendData = await this._getExportMessage({ outcome });
       await this._appendToTargetFile({ appendData, filePath: newFilePath });
@@ -130,7 +129,7 @@ class FileExporter {
     console.log('outcome', outcome);
   }
 
-  async addFilesToDoNotExportList({ files, outcome }) {
+  async addFilesToDoNotExportList({ files /*, outcome is unused */ }) {
     const curationLog = await readFile(this.curationLogsPath);
     const curationLogData = JSON.parse(curationLog);
 
@@ -146,7 +145,7 @@ class FileExporter {
   }
 
   // TODO maybe use a copy cmd here instead?
-  async exportAndOverwrite({ files, outcome }) {
+  async exportAndOverwrite({ files /*, outcome is unused */ }) {
     files.forEach(async (filePath) => {
       const newSource = await this._readModifiedSourceFile(filePath);
 
@@ -171,11 +170,11 @@ class FileExporter {
     });
   }
 
-  async deleteTargetFile({ files, outcome }) {
+  async deleteTargetFile({ files /*, outcome is unused */ }) {
     files.forEach(async filePath => await unlink(`${this.targetDirectory}${filePath}`));
   }
 
-  async renameTargetFile({ files, outcome }) {
+  async renameTargetFile({ files /*, outcome is unused */ }) {
     files.forEach(async (filePath) => {
       const [renameWithPercent, oldFilePath, newFilePath] = filePath.split(',');
       await rename(`${this.targetDirectory}${oldFilePath}`, `${this.targetDirectory}${newFilePath}`);
@@ -207,7 +206,7 @@ class FileExporter {
     });
   }
 
-  async exportFile({ files, outcome }) {
+  async exportFile({ files /*, outcome is unused */ }) {
     files.forEach(async (filePath) => {
       await this._copySourceFileToTarget(filePath);
     });
