@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+process.setMaxListeners(Infinity); // <== Important line
+
 const { GitUtil } = require('./utils/git.js');
 const { FileExporter } = require('./utils/fileExporter.js');
 const { FileStatusManager } = require('./utils/fileStatusManager.js');
@@ -54,6 +56,9 @@ try {
       sourceDirectory: data.sourceDirectory,
       targetDirectory: data.targetDirectory,
       sourceExcludes: data.sourceExcludes,
+      ignoredMaintainers: data.ignoredMaintainers,
+      targetRevisionAtLastExport: data.targetRevisionAtLastExport,
+      curationLogsPath: data.curationLogsPath,
       targetDiffList,
       sourceDiffList,
       targetAndSourceDiff,
@@ -61,6 +66,8 @@ try {
 
     const fileOutcomes = await fileStatusManager.init();
     const foundChangedFiles = Object.keys(fileOutcomes).some(outcome => fileOutcomes[outcome].files.length > 0);
+
+    console.log('foundChangedFiles', foundChangedFiles);
 
     if (foundChangedFiles) {
       const fileExporter = new FileExporter({
@@ -100,3 +107,16 @@ try {
 } catch (error) {
   console.error('ERROR IN INDEX.JS', error);
 }
+
+function cleanUpScripts(eventName) {
+  // kill any running child processes
+  process.exit();
+  // remove temp dir with cloned repos
+  if(fs.existsSync(data.tempDirPath)){
+    fs.unlinkSync(data.tempDirPath);
+  }
+
+  console.info(`Clean up scripts called on ${eventName} event`);
+}
+process.on('SIGINT', () => cleanUpScripts('SIGINT'));
+process.on('exit', () => cleanUpScripts('exit'));

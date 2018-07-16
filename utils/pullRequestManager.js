@@ -20,9 +20,9 @@ class PullRequestManager {
       outcomes,
     });
 
-    if (body.length > 6000) {
-      body = body.slice(0, 5999).concat('.......report too long for Github. Review Travis log for full output of changes files.');
-    }
+    // if (body.length > 6000) {
+    //   body = body.slice(0, 5999).concat('.......report too long for Github. Review Travis log for full output of changes files.');
+    // }
 
     const pullRequest = await this.uploadPullRequest({
       branchName,
