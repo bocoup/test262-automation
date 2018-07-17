@@ -38,7 +38,7 @@ try {
       directory: data.sourceRootDir,
     });
 
-    // diffList C (source Sha to Head)
+    // diffList C (source files and target files)
     const targetAndSourceDiff = await gitUtil.diff({
       options: [
         '--no-index',
