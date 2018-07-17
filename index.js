@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+process.setMaxListeners(30); // TODO performance profiling
+
 const { GitUtil } = require('./utils/git.js');
 const { FileExporter } = require('./utils/fileExporter.js');
 const { FileStatusManager } = require('./utils/fileStatusManager.js');
@@ -36,7 +38,7 @@ try {
       directory: data.sourceRootDir,
     });
 
-    // diffList C (source Sha to Head)
+    // diffList C (source files and target files)
     const targetAndSourceDiff = await gitUtil.diff({
       options: [
         '--no-index',
@@ -54,13 +56,19 @@ try {
       sourceDirectory: data.sourceDirectory,
       targetDirectory: data.targetDirectory,
       sourceExcludes: data.sourceExcludes,
+      ignoredMaintainers: data.ignoredMaintainers,
+      targetRevisionAtLastExport: data.targetRevisionAtLastExport,
+      curationLogsPath: data.curationLogsPath,
       targetDiffList,
       sourceDiffList,
       targetAndSourceDiff,
     });
 
+
     const fileOutcomes = await fileStatusManager.init();
     const foundChangedFiles = Object.keys(fileOutcomes).some(outcome => fileOutcomes[outcome].files.length > 0);
+
+    console.debug('foundChangedFiles', foundChangedFiles);
 
     if (foundChangedFiles) {
       const fileExporter = new FileExporter({
@@ -100,3 +108,16 @@ try {
 } catch (error) {
   console.error('ERROR IN INDEX.JS', error);
 }
+
+function cleanUpScripts(eventName) {
+  // kill any running child processes
+  process.exit();
+  // remove temp dir with cloned repos
+  if(fs.existsSync(data.tempDirPath)){
+    fs.unlinkSync(data.tempDirPath);
+  }
+
+  console.info(`Clean up scripts called on ${eventName} event`);
+}
+process.on('SIGINT', () => cleanUpScripts('SIGINT'));
+process.on('exit', () => cleanUpScripts('exit'));

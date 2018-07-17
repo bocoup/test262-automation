@@ -4,6 +4,8 @@
   "t262BaseBranch": "master",
   "t262GithubUsername": "test262-automation",
   "t262GitRemote": "git@github.com:test262-automation/mock-test262.git",
+  "ignoredMaintainers": ["test262-automation", "Github"],
+  "githubAuthorEmail": "test262-automation@bocoup.com",
   "githubToken": null,
   "newBranchNameForMerge": "test262-debug-automation-export"
 }
