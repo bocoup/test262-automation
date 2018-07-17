@@ -243,7 +243,7 @@ class GitUtil {
 
   diff(params) {
     // TODO handle for if directory does not exist
-    const { options, directory } = params;
+    const { options, directory } = utils/github.jsparams;
     let diffData = '';
 
     return new Promise((resolve, reject) => {
@@ -287,23 +287,6 @@ class GitUtil {
     });
   }
 
-  // Returns a promise that resolves with true if the file has been
-  // modified since the `commit` or false if it has not. An optional
-  // list of ignoredMaintainers can be provided to ignore commits
-  // from those maintainers.
-  async fileHasBeenModified({ since, directory, filename, ignoredMaintainers = [], }) {
-    const history = await this.log({
-      directory,
-      options: ['--format=%cn', `${since}...master`, '--', filename],
-    });
-
-    const maintainers = new Set(history.split('\n').filter(Boolean));
-    ignoredMaintainers.forEach((maintainer) => {
-      maintainers.delete(maintainer);
-    });
-
-    return !!maintainers.size;
-  }
 
   async getLastRevisionSha({ directory, branch }) {
     const lastRevisionSha = await execCmd(`git rev-list ${branch} --oneline --max-count=1`, { cwd: directory });
