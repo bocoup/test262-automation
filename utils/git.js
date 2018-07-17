@@ -371,7 +371,7 @@ class GitUtil {
   async commitUpdatedCurationLogs() {
     // TODO make this optional only if changes are made in the curation log
     await this.addChanges();
-    await this.commit(`updated curation log with latest revision sha\'s from export and changed files.
+    await this.commit(`updated curation log with latest revision sha's from export and changed files.
     sourceRevisionAtLastExport: ${this.sourceRevisionAtLastExport} targetRevisionAtLastExport: ${this.targetRevisionAtLastExport}`);
     await this.pushRemoteBranch();
   }

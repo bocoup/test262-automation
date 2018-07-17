@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+const fs = require('fs');
 process.setMaxListeners(30); // TODO performance profiling
 
 const { GitUtil } = require('./utils/git.js');
@@ -109,15 +109,15 @@ try {
   console.error('ERROR IN INDEX.JS', error);
 }
 
-function cleanUpScripts(eventName) {
+function cleanUpScripts({ eventName, tempDirPath }) {
   // kill any running child processes
   process.exit();
   // remove temp dir with cloned repos
-  if(fs.existsSync(data.tempDirPath)){
-    fs.unlinkSync(data.tempDirPath);
+  if(fs.existsSync(tempDirPath)){
+    fs.unlinkSync(tempDirPath);
   }
 
   console.info(`Clean up scripts called on ${eventName} event`);
 }
-process.on('SIGINT', () => cleanUpScripts('SIGINT'));
-process.on('exit', () => cleanUpScripts('exit'));
+process.on('SIGINT', () => cleanUpScripts({ eventName: 'SIGINT',tempDirPath: gitUtil.tempDirPath}));
+process.on('exit', () => cleanUpScripts({ eventName: 'exit',tempDirPath: gitUtil.tempDirPath}));
