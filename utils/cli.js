@@ -67,7 +67,8 @@ function getConfigOptions() {
   let githubConfig = 'github';
 
   if (argv.debug) {
-    process.NODE_ENV = 'DEBUG';
+    process.env.NODE_ENV = 'DEBUG';
+    process.env.DEBUG = "test262-automation";
     implementationConfig = `${implementationConfig}-debug`;
     githubConfig = `${githubConfig}-debug`;
   }

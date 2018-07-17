@@ -24,6 +24,7 @@
   "dependencies": {
     "common-tags": "^1.8.0",
     "cp-file": "^6.0.0",
+    "debug": "^3.1.0",
     "isomorphic-fetch": "^2.2.1",
     "lodash.get": "^4.4.2",
     "lodash.pick": "^4.4.0",

@@ -14,7 +14,6 @@ npm install
 node index.js -implementation IMPLEMENTATION
 ```
 
-
 For a list of avaliable implemations:
 
 ```
@@ -82,6 +81,10 @@ page](https://travis-ci.org/bocoup/test262-automation/settings) to
 configure a new cron job on the new branch. The
 [.travis.yml](https://github.com/bocoup/test262-automation/blob/master/.travis.yml)
 file contains a rule to run any cron jobs not on the `master` branch
-with the `--debug` flag.
+with the `--debug` flag. Use of the `--debug` flag also sets the NODE_ENV to `DEBUG`, and enables verbose debug logs.
 
+To enable verbose DEBUG logs run:
 
+```
+DEBUG=* node index.js -implementation IMPLEMENTATION
+```

@@ -1,3 +1,4 @@
+const debug = require('debug')("test262-automation:log");
 const multimatch = require('multimatch');
 const get = require('lodash.get');
 const { spawn } = require('child_process');
@@ -221,7 +222,7 @@ class FileStatusManager {
         throw invalidStatusMessage;
       }
     }
-    console.debug(`shouldIncludePath ? ${shouldIncludePath} ${paths}`);
+    debug(`shouldIncludePath ? ${shouldIncludePath} ${paths}`);
 
     return shouldIncludePath;
   }
@@ -361,7 +362,7 @@ class FileStatusManager {
         throw new Error(`UNSUPPORTED_SCENARIO: statusScenario is ${statusScenario} for file ${filePath}`);
       }
     }
-    console.debug('FILE_OUTCOMES: ', this.fileOutcomes);
+    debug('FILE_OUTCOMES: ', this.fileOutcomes);
     return this.fileOutcomes;
   }
 }
