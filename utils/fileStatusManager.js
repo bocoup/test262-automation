@@ -1,12 +1,12 @@
-const readline = require('readline');
 const multimatch = require('multimatch');
-const { Readable } = require('stream');
 const get = require('lodash.get');
-
+const { spawn } = require('child_process');
 
 const {
-  FILE_OUTCOMES, STATUS_SCENARIOS, FILE_STATUSES: {
-    RENAMED, UNKNOWN, UNMERGED, ADDED, DELETED, FILE_TYPE_CHANGE, NO_CHANGE,
+  FILE_OUTCOMES,
+  STATUS_SCENARIOS,
+  FILE_STATUSES: {
+    RENAMED, UNKNOWN, UNMERGED, ADDED, DELETED, FILE_TYPE_CHANGE, NO_CHANGE, MODIFIED
   },
 } = require('./constants.js');
 
@@ -31,6 +31,7 @@ const SOURCE_ERROR_STATUS = [UNMERGED, UNKNOWN];
 const TARGET_ERROR_STATUS = [...SOURCE_ERROR_STATUS, ADDED, FILE_TYPE_CHANGE, RENAMED];
 
 class FileStatusManager {
+
   constructor(params) {
     this.tempDirPath = params.tempDirPath;
     this.targetDiffList = params.targetDiffList;
@@ -41,6 +42,9 @@ class FileStatusManager {
     this.sourceDirectory = params.sourceDirectory;
     this.targetDirectory = params.targetDirectory;
     this.sourceExcludes = params.sourceExcludes;
+    this.targetRevisionAtLastExport = params.targetRevisionAtLastExport;
+    this.curationLogsPath = params.curationLogsPath;
+    this.ignoredMaintainers = params.ignoredMaintainers;
     this.targetDirectoryPattern = `${this.targetDirectory}/**`;
     this.sourceDirectoryPattern = `${this.sourceDirectory}/**`;
     this.fileOutcomes = { // TODO make a func to generate this
@@ -115,7 +119,8 @@ class FileStatusManager {
     });
 
     this.updateMasterList();
-    return this.getFileOutcomes();
+
+    return await this.getFileOutcomes();
   }
 
   isSourceFilePath(path) {
@@ -166,7 +171,7 @@ class FileStatusManager {
   }
 
   getStatusAndPaths({ diffInfoStr, directoryPath }) {
-    let [status, pathA, pathB] = diffInfoStr.split(String.fromCharCode(9));
+    let [status, pathA, pathB] = diffInfoStr.split('\t');
 
     // add full directory path
     pathA = `${directoryPath}/${pathA}`;
@@ -182,103 +187,120 @@ class FileStatusManager {
     };
   }
 
-  filterDiffList({
+  async filterDiffList({
     includes, excludes, pathA, pathB, errorStatuses, status,
   }) {
     const negatedExcludes = excludes.map(exclusionPattern => `!${exclusionPattern}`);
     let shouldIncludePath = false;
 
-
     const paths = pathB ? [pathA, pathB] : [pathA];
 
     if (multimatch(paths, includes.concat(negatedExcludes)).length) {
       const invalidStatus = errorStatuses.some(errorStatus => status === errorStatus);
+      const invalidStatusMessage = `INVALID_STATUS: ${status} is an invalid status for paths ${pathA} ${pathB}`;
+      let fileHasBeenModifiedOrAddedByTargetCurators = false;
+      shouldIncludePath = true;
 
       if (invalidStatus) {
-        throw `INVALID_STATUS: ${status} is an invalid status for paths ${pathA} ${pathB}`;
+
+        if((status === ADDED || status === RENAMED) && !this.isSourceFilePath(pathA)) {
+
+          fileHasBeenModifiedOrAddedByTargetCurators = await this.fileHasBeenModifiedOrAddedByTargetCurators({
+            since: this.targetRevisionAtLastExport,
+            directory: this.targetDirectory,
+            filename: this.trimFilePath(pathA)
+          });
+
+          if(fileHasBeenModifiedOrAddedByTargetCurators) {
+            throw invalidStatusMessage
+          }
+
+          return shouldIncludePath
+        }
+
+        throw invalidStatusMessage;
       }
-
-      shouldIncludePath = true;
     }
-
     console.debug(`shouldIncludePath ? ${shouldIncludePath} ${paths}`);
+
     return shouldIncludePath;
   }
 
-  async createDiffListObj({
-    diffList, excludes, includes, directoryPath, errorStatuses,
-  }) {
+  log(params) {
+    const { options, directory } = params;
+    let logData = '';
+
     return new Promise((resolve, reject) => {
-      const read = readline.createInterface({
-        input: this.createReadStream(diffList),
-        crlfDelay: Infinity,
+      const log = spawn('git', ['log', ...options], { cwd: directory });
+
+      log.stdout.on('data', (data) => {
+        logData += String(data);
       });
 
-      const diffListObj = {};
-
-      read.on('line', (line) => {
-        const diffInfoStr = String(line);
-
-        const { status, pathA, pathB } = this.getStatusAndPaths({ diffInfoStr, directoryPath });
-
-        const filterOptions = {
-          status,
-          includes,
-          excludes,
-          pathA,
-          pathB,
-          errorStatuses,
-        };
-
-        if (this.filterDiffList(filterOptions)) {
-          if (status[0] === RENAMED) {
-            // old file name as key
-            // state, and new file name as value
-            diffListObj[pathA] = `${status},${pathB}`;
-          } else {
-            diffListObj[pathA] = status;
-          }
-        }
-      });
-
-      read.on('error', (error) => {
-        console.error('ERROR', error);
+      process.on('error', (error) => {
         reject(error);
       });
 
-      read.on('close', () => {
-        console.debug('diffListObj', diffListObj);
-        resolve(diffListObj);
+      log.on('exit', () => {
+        resolve(logData);
       });
     });
   }
 
-  createReadStream(data) {
-    const stream = new Readable({ read() {} });
-    stream.push(data);
-    stream.push(null);
+  // Returns a promise that resolves with true if the file has been
+  // modified since the `commit` or false if it has not. An optional
+  // list of ignoredMaintainers can be provided to ignore commits
+  // from those maintainers.
+  async fileHasBeenModifiedOrAddedByTargetCurators({ since, directory, filename, }) {
+    const ignoredMaintainers = this.ignoredMaintainers || [];
+    const history = await this.log({
+      directory,
+      options: ['--format=%an', `${since}...master`, `.${filename}`],
+    });
 
-    return stream;
+    const maintainers = new Set(history.split('\n').filter(Boolean));
+    ignoredMaintainers.forEach(maintainer => {
+      maintainers.delete(maintainer);
+    });
+
+    return !!maintainers.size;
   }
 
-  getFileStatus({
-    targetFilePath, sourceFilePath, isSourceFilePath, filePath,
-  }) {
-    let targetStatus = get(this.targetDiffListObj, targetFilePath, NO_CHANGE);
-    let sourceStatus = get(this.sourceDiffListObj, sourceFilePath, NO_CHANGE).split(',')[0]; // support for renames
-    const sourceAndTargetDiffStatus = get(this.targetAndSourceDiffListObj, filePath, NO_CHANGE).split(',')[0];
-    const isRenamedStatus = status => status[0] === RENAMED;
-    let renameWithPercent = '';
+  async createDiffListObj({ diffList, excludes, includes, directoryPath, errorStatuses, }) {
+    const diffListObj = {};
 
-    if ((targetStatus === NO_CHANGE) && (sourceStatus === NO_CHANGE)) {
-      // use the status from the master diff which compares the directories of the target & source repo
-      // list bc change is not reflected in the sha's used for target & source diff lists
-      if (isSourceFilePath) {
-        sourceStatus = sourceAndTargetDiffStatus;
-      } else {
-        targetStatus = sourceAndTargetDiffStatus;
+    const diffListArray = diffList.split(/\r?\n/); // split by new line
+
+    for (const diffInfoStr of diffListArray) {
+      const {status, pathA, pathB} = this.getStatusAndPaths({diffInfoStr, directoryPath});
+
+      const filterOptions = {
+        status,
+        includes,
+        excludes,
+        pathA,
+        pathB,
+        errorStatuses,
+      };
+
+      if (await this.filterDiffList(filterOptions)) {
+        if (status[0] === RENAMED) {
+          // old file name as key
+          // state, and new file name as value
+          diffListObj[pathA] = `${status},${pathB}`;
+        } else {
+          diffListObj[pathA] = status;
+        }
       }
     }
+    return diffListObj;
+  }
+
+  getFileStatus({ targetFilePath, sourceFilePath, }) {
+    let targetStatus = get(this.targetDiffListObj, targetFilePath, NO_CHANGE);
+    let sourceStatus = get(this.sourceDiffListObj, sourceFilePath, NO_CHANGE).split(',')[0]; // support for renames
+    const isRenamedStatus = status => status[0] === RENAMED;
+    let renameWithPercent = '';
 
     if (isRenamedStatus(sourceStatus)) {
       renameWithPercent = sourceStatus;
@@ -292,15 +314,39 @@ class FileStatusManager {
     };
   }
 
-  getFileOutcomes() {
-    Object.keys(this.targetAndSourceDiffListObj).forEach((filePath) => {
+  async getFileOutcomes() {
+
+    for (const filePath of Object.keys(this.targetAndSourceDiffListObj)) {
+
       const {
-        baseFilePath, renamedBaseFilePath, sourceFilePath, targetFilePath, isSourceFilePath, renamedFilePath,
+        baseFilePath, renamedBaseFilePath, sourceFilePath, targetFilePath, renamedFilePath,
       } = this.getFilePathOptions({ filePath });
 
-      const { sourceStatus, targetStatus, renameWithPercent } = this.getFileStatus({
-        targetFilePath, sourceFilePath, isSourceFilePath, filePath,
-      });
+      const { sourceStatus, targetStatus, renameWithPercent } = this.getFileStatus({ targetFilePath, sourceFilePath, });
+
+      if ((targetStatus === NO_CHANGE) && (sourceStatus === NO_CHANGE)) {
+        // we can safely ignore these changes since the changes we care about are handled by this.updateMaster
+        continue;
+      }
+
+      if((targetStatus === ADDED || targetStatus === RENAMED) && (sourceStatus === NO_CHANGE)) {
+        // we can safely ignore this bc we validated that the automation user added these files in a previous step
+        continue;
+      }
+
+     if((targetStatus === MODIFIED) && (sourceStatus === NO_CHANGE)) {
+        // confirm that modifications were from the automation user
+        const fileModifiedByAutomationUser = await this.fileHasBeenModifiedOrAddedByTargetCurators({
+          since: this.targetRevisionAtLastExport,
+          directory: this.targetDirectory,
+          filename: baseFilePath
+        });
+
+        if (fileModifiedByAutomationUser) {
+          continue;
+        }
+     }
+
       const statusScenario = STATUS_SCENARIOS[`${targetStatus}${sourceStatus}`];
 
       if (this.fileOutcomes[statusScenario]) {
@@ -312,11 +358,9 @@ class FileStatusManager {
           this.fileOutcomes[statusScenario].files.push(baseFilePath);
         }
       } else {
-        console.log(`UNSUPPORTED_SCENARIO: statusScenario is ${statusScenario} for file ${filePath}`);
-        // throw new Error(`UNSUPPORTED_SCENARIO: statusScenario is ${statusScenario} for file ${filePath}`);
+        throw new Error(`UNSUPPORTED_SCENARIO: statusScenario is ${statusScenario} for file ${filePath}`);
       }
-    });
-
+    }
     console.debug('FILE_OUTCOMES: ', this.fileOutcomes);
     return this.fileOutcomes;
   }
