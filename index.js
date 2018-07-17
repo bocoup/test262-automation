@@ -64,7 +64,9 @@ try {
       targetAndSourceDiff,
     });
 
-    const fileOutcomes = await fileStatusManager.init();
+    await fileStatusManager.init();
+
+    const fileOutcomes = fileStatusManager.fileOutcomes;
     const foundChangedFiles = Object.keys(fileOutcomes).some(outcome => fileOutcomes[outcome].files.length > 0);
 
     console.log('foundChangedFiles', foundChangedFiles);
