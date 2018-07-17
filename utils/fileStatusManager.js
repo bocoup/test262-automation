@@ -1,6 +1,4 @@
-const readline = require('readline');
 const multimatch = require('multimatch');
-const { Readable } = require('stream');
 const get = require('lodash.get');
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -11,7 +9,7 @@ const {
   FILE_OUTCOMES,
   STATUS_SCENARIOS,
   FILE_STATUSES: {
-    RENAMED, UNKNOWN, UNMERGED, ADDED, DELETED, FILE_TYPE_CHANGE, NO_CHANGE,
+    RENAMED, UNKNOWN, UNMERGED, ADDED, DELETED, FILE_TYPE_CHANGE, NO_CHANGE, MODIFIED
   },
   CURATION_LOG_FILE_STATUSES: {
     DELETED_IN_TARGET
@@ -40,7 +38,6 @@ const TARGET_ERROR_STATUS = [...SOURCE_ERROR_STATUS, ADDED, FILE_TYPE_CHANGE, RE
 
 class FileStatusManager {
   constructor(params) {
-    this.curatedFiled = null;
     this.tempDirPath = params.tempDirPath;
     this.targetDiffList = params.targetDiffList;
     this.sourceDiffList = params.sourceDiffList;
@@ -102,8 +99,6 @@ class FileStatusManager {
   }
 
   async init() {
-    this.curationLogData = await this.getCuratedFilesFromCurationLog();
-
     this.targetDiffListObj = await this.createDiffListObj({
       diffList: this.targetDiffList,
       includes: [this.targetDirectoryPattern],
@@ -138,12 +133,7 @@ class FileStatusManager {
 
     console.log('after targetAndSourceDiffListObj', this.targetAndSourceDiffListObj);
 
-    return this.getFileOutcomes();
-  }
-
-  async getCuratedFilesFromCurationLog() {
-    const curationLog = await readFile(this.curationLogsPath);
-    return JSON.parse(curationLog);
+    return await this.getFileOutcomes();
   }
 
   isSourceFilePath(path) {
@@ -197,7 +187,7 @@ class FileStatusManager {
   }
 
   getStatusAndPaths({ diffInfoStr, directoryPath }) {
-    let [status, pathA, pathB] = diffInfoStr.split(String.fromCharCode(9));
+    let [status, pathA, pathB] = diffInfoStr.split('\t');
 
     // add full directory path
     pathA = `${directoryPath}/${pathA}`;
@@ -296,60 +286,34 @@ class FileStatusManager {
     return !!maintainers.size;
   }
 
-  async createDiffListObj({
-    diffList, excludes, includes, directoryPath, errorStatuses,
-  }) {
-    return new Promise(async (resolve, reject) => {
-      const read = readline.createInterface({
-        input: this.createReadStream(diffList),
-        crlfDelay: Infinity,
-      });
+  async createDiffListObj({ diffList, excludes, includes, directoryPath, errorStatuses, }) {
+    const diffListObj = {};
 
-      const diffListObj = {};
+    const diffListArray = diffList.split(/\r?\n/); // split by new line
 
-      read.on('line', async (line) => {
-        const diffInfoStr = String(line);
+    for (const diffInfoStr of diffListArray) {
+      const {status, pathA, pathB} = this.getStatusAndPaths({diffInfoStr, directoryPath});
 
-        const { status, pathA, pathB } = this.getStatusAndPaths({ diffInfoStr, directoryPath });
+      const filterOptions = {
+        status,
+        includes,
+        excludes,
+        pathA,
+        pathB,
+        errorStatuses,
+      };
 
-        const filterOptions = {
-          status,
-          includes,
-          excludes,
-          pathA,
-          pathB,
-          errorStatuses,
-        };
-
-        if (await this.filterDiffList(filterOptions)) {
-          if (status[0] === RENAMED) {
-            // old file name as key
-            // state, and new file name as value
-            diffListObj[pathA] = `${status},${pathB}`;
-          } else {
-            diffListObj[pathA] = status;
-          }
+      if (await this.filterDiffList(filterOptions)) {
+        if (status[0] === RENAMED) {
+          // old file name as key
+          // state, and new file name as value
+          diffListObj[pathA] = `${status},${pathB}`;
+        } else {
+          diffListObj[pathA] = status;
         }
-      });
-
-      read.on('error', (error) => {
-        console.error('ERROR', error);
-        reject(error);
-      });
-
-      read.on('close', () => {
-        console.debug('diffListObj', diffListObj);
-        resolve(diffListObj);
-      });
-    });
-  }
-
-  createReadStream(data) {
-    const stream = new Readable({ read() {} });
-    stream.push(data);
-    stream.push(null);
-
-    return stream;
+      }
+    }
+    return diffListObj;
   }
 
   getFileStatus({ targetFilePath, sourceFilePath, }) {
@@ -370,8 +334,10 @@ class FileStatusManager {
     };
   }
 
-  getFileOutcomes() {
-    Object.keys(this.targetAndSourceDiffListObj).forEach((filePath) => {
+  async getFileOutcomes() {
+
+    for (const filePath of Object.keys(this.targetAndSourceDiffListObj)) {
+
       const {
         baseFilePath, renamedBaseFilePath, sourceFilePath, targetFilePath, renamedFilePath,
       } = this.getFilePathOptions({ filePath });
@@ -379,8 +345,26 @@ class FileStatusManager {
       const { sourceStatus, targetStatus, renameWithPercent } = this.getFileStatus({ targetFilePath, sourceFilePath, });
 
       if ((targetStatus === NO_CHANGE) && (sourceStatus === NO_CHANGE)) {
-        // we can safely ignore these changes
+        // we can safely ignore these changes since the changes we care about are handled by this.updateMaster
         return;
+      }
+
+      if((targetStatus === ADDED || targetStatus === RENAMED) && (sourceStatus === NO_CHANGE)) {
+        // we can safely ignore this bc we validated that the automation user added these files in a previous step
+        return;
+      }
+
+      if((targetStatus === MODIFIED) && (sourceStatus === NO_CHANGE)) {
+        // confirm that modifications were from the automation user
+        const fileModifiedByAutomationUser = await this.fileHasBeenModifiedOrAddedByTargetCurators({
+          since: this.targetRevisionAtLastExport,
+          directory: this.targetDirectory,
+          filename: baseFilePath
+        });
+
+        if (fileModifiedByAutomationUser) {
+          return;
+        }
       }
 
       const statusScenario = STATUS_SCENARIOS[`${targetStatus}${sourceStatus}`];
@@ -396,8 +380,7 @@ class FileStatusManager {
       } else {
         throw new Error(`UNSUPPORTED_SCENARIO: statusScenario is ${statusScenario} for file ${filePath}`);
       }
-    });
-
+    }
     console.debug('FILE_OUTCOMES: ', this.fileOutcomes);
     return this.fileOutcomes;
   }
