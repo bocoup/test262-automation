@@ -1,3 +1,4 @@
+const debug = require('debug')("test262-automation:log");
 const util = require('util');
 const os = require('os');
 const fs = require('fs');
@@ -107,7 +108,7 @@ class GitUtil {
     const targetSubDirectoryExists = await this._checkIfDirectoryExists(this.targetDirectory);
 
     if (!targetSubDirectoryExists) {
-      console.debug('targetSubDirectoryExists', targetSubDirectoryExists);
+      debug('targetSubDirectoryExists', targetSubDirectoryExists);
 
       process.chdir(this.targetRootDir);
 
@@ -131,7 +132,7 @@ class GitUtil {
   }
 
   _setTargetBranch() {
-    const branchPostFix = process.NODE_ENV === DEBUG ? this.timestampForExport : this.targetRevisionAtLastExport;
+    const branchPostFix = process.env.NODE_ENV === DEBUG ? this.timestampForExport : this.targetRevisionAtLastExport;
     this.targetBranch = `${this.implementerName}-${this.newBranchNameForMerge}-${branchPostFix}`;
   }
 
@@ -143,7 +144,7 @@ class GitUtil {
     return new Promise(async (resolve, reject) => {
       try {
         await fsPromises.open(path, 'r').then(() => {
-          console.info('Dir exists @', path);
+          debug('Dir exists @', path);
           resolve(true);
         });
       } catch (err) {

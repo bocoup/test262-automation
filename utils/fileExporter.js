@@ -1,3 +1,4 @@
+const debug = require('debug')("test262-automation:log");
 const fs = require('fs');
 const util = require('util');
 const cpFile = require('cp-file');
@@ -133,13 +134,13 @@ class FileExporter {
     const curationLog = await readFile(this.curationLogsPath);
     const curationLogData = JSON.parse(curationLog);
 
-    console.log('curationLogData BEFORE', curationLogData);
+    debug('curationLogData BEFORE', curationLogData);
 
     files.forEach((filePath) => {
       curationLogData.curatedFiles[filePath] = 'DELETED_IN_TARGET';
     });
 
-    console.log('curationLogData AFTER', curationLogData);
+    debug('curationLogData AFTER', curationLogData);
 
     await writeFile(this.curationLogsPath, JSON.stringify(curationLogData, null, 2));
   }

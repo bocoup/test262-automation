@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const debug = require('debug')("test262-automation:log");
 const fs = require('fs');
 process.setMaxListeners(30); // TODO performance profiling
 
@@ -68,7 +69,7 @@ try {
     const fileOutcomes = await fileStatusManager.init();
     const foundChangedFiles = Object.keys(fileOutcomes).some(outcome => fileOutcomes[outcome].files.length > 0);
 
-    console.debug('foundChangedFiles', foundChangedFiles);
+    debug('foundChangedFiles', foundChangedFiles);
 
     if (foundChangedFiles) {
       const fileExporter = new FileExporter({
