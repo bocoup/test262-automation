@@ -243,7 +243,7 @@ class GitUtil {
 
   diff(params) {
     // TODO handle for if directory does not exist
-    const { options, directory } = utils/github.jsparams;
+    const { options, directory } = params;
     let diffData = '';
 
     return new Promise((resolve, reject) => {
