@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-process.setMaxListeners(Infinity); // <== Important line
+process.setMaxListeners(30); // TODO performance profiling
 
 const { GitUtil } = require('./utils/git.js');
 const { FileExporter } = require('./utils/fileExporter.js');
@@ -64,12 +64,11 @@ try {
       targetAndSourceDiff,
     });
 
-    await fileStatusManager.init();
 
-    const fileOutcomes = fileStatusManager.fileOutcomes;
+    const fileOutcomes = await fileStatusManager.init();
     const foundChangedFiles = Object.keys(fileOutcomes).some(outcome => fileOutcomes[outcome].files.length > 0);
 
-    console.log('foundChangedFiles', foundChangedFiles);
+    console.debug('foundChangedFiles', foundChangedFiles);
 
     if (foundChangedFiles) {
       const fileExporter = new FileExporter({

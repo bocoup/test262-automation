@@ -1,18 +1,12 @@
 const multimatch = require('multimatch');
 const get = require('lodash.get');
 const { spawn } = require('child_process');
-const fs = require('fs');
-const util = require('util');
-const readFile = util.promisify(fs.readFile);
 
 const {
   FILE_OUTCOMES,
   STATUS_SCENARIOS,
   FILE_STATUSES: {
     RENAMED, UNKNOWN, UNMERGED, ADDED, DELETED, FILE_TYPE_CHANGE, NO_CHANGE, MODIFIED
-  },
-  CURATION_LOG_FILE_STATUSES: {
-    DELETED_IN_TARGET
   },
 } = require('./constants.js');
 
@@ -37,6 +31,7 @@ const SOURCE_ERROR_STATUS = [UNMERGED, UNKNOWN];
 const TARGET_ERROR_STATUS = [...SOURCE_ERROR_STATUS, ADDED, FILE_TYPE_CHANGE, RENAMED];
 
 class FileStatusManager {
+
   constructor(params) {
     this.tempDirPath = params.tempDirPath;
     this.targetDiffList = params.targetDiffList;
@@ -107,8 +102,6 @@ class FileStatusManager {
       errorStatuses: TARGET_ERROR_STATUS,
     });
 
-    console.log('targetDiffListObj', this.targetDiffListObj);
-
     this.sourceDiffListObj = await this.createDiffListObj({
       diffList: this.sourceDiffList,
       includes: [this.sourceDirectoryPattern],
@@ -116,8 +109,6 @@ class FileStatusManager {
       excludes: [],
       errorStatuses: SOURCE_ERROR_STATUS,
     });
-
-    console.log('sourceDiffListObj', this.sourceDiffListObj);
 
     this.targetAndSourceDiffListObj = await this.createDiffListObj({
       diffList: this.targetAndSourceDiff,
@@ -127,13 +118,9 @@ class FileStatusManager {
       errorStatuses: [],
     });
 
-    console.log('before targetAndSourceDiffListObj', this.targetAndSourceDiffListObj);
-
     this.updateMasterList();
 
-    console.log('after targetAndSourceDiffListObj', this.targetAndSourceDiffListObj);
-
-    await this.getFileOutcomes();
+    return await this.getFileOutcomes();
   }
 
   isSourceFilePath(path) {
@@ -165,9 +152,6 @@ class FileStatusManager {
         }
       });
     }
-
-    // remove files which have already been shipped
-
   }
 
   getFilePathOptions({ filePath }) {
@@ -275,13 +259,9 @@ class FileStatusManager {
     });
 
     const maintainers = new Set(history.split('\n').filter(Boolean));
-    console.log('ignoredMaintainers', this.ignoredMaintainers);
-    console.log('maintainers', maintainers);
-
     ignoredMaintainers.forEach(maintainer => {
       maintainers.delete(maintainer);
     });
-    console.log('maintainers', maintainers);
 
     return !!maintainers.size;
   }
@@ -346,12 +326,12 @@ class FileStatusManager {
 
       if ((targetStatus === NO_CHANGE) && (sourceStatus === NO_CHANGE)) {
         // we can safely ignore these changes since the changes we care about are handled by this.updateMaster
-        return;
+        continue;
       }
 
       if((targetStatus === ADDED || targetStatus === RENAMED) && (sourceStatus === NO_CHANGE)) {
         // we can safely ignore this bc we validated that the automation user added these files in a previous step
-        return;
+        continue;
       }
 
      if((targetStatus === MODIFIED) && (sourceStatus === NO_CHANGE)) {
@@ -363,7 +343,7 @@ class FileStatusManager {
         });
 
         if (fileModifiedByAutomationUser) {
-          return;
+          continue;
         }
      }
 
