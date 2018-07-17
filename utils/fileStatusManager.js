@@ -133,7 +133,7 @@ class FileStatusManager {
 
     console.log('after targetAndSourceDiffListObj', this.targetAndSourceDiffListObj);
 
-    return await this.getFileOutcomes();
+    await this.getFileOutcomes();
   }
 
   isSourceFilePath(path) {
@@ -354,7 +354,7 @@ class FileStatusManager {
         return;
       }
 
-      if((targetStatus === MODIFIED) && (sourceStatus === NO_CHANGE)) {
+     if((targetStatus === MODIFIED) && (sourceStatus === NO_CHANGE)) {
         // confirm that modifications were from the automation user
         const fileModifiedByAutomationUser = await this.fileHasBeenModifiedOrAddedByTargetCurators({
           since: this.targetRevisionAtLastExport,
@@ -365,7 +365,7 @@ class FileStatusManager {
         if (fileModifiedByAutomationUser) {
           return;
         }
-      }
+     }
 
       const statusScenario = STATUS_SCENARIOS[`${targetStatus}${sourceStatus}`];
 
