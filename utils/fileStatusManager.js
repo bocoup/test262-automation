@@ -1,13 +1,23 @@
-const debug = require('debug')("test262-automation:log");
+const debug = require('debug')('test262-automation:log');
 const multimatch = require('multimatch');
 const get = require('lodash.get');
-const { spawn } = require('child_process');
+const path = require('path');
+const {
+  spawn
+} = require('child_process');
 
 const {
   FILE_OUTCOMES,
   STATUS_SCENARIOS,
   FILE_STATUSES: {
-    RENAMED, UNKNOWN, UNMERGED, ADDED, DELETED, FILE_TYPE_CHANGE, NO_CHANGE, MODIFIED
+    RENAMED,
+    UNKNOWN,
+    UNMERGED,
+    ADDED,
+    DELETED,
+    FILE_TYPE_CHANGE,
+    NO_CHANGE,
+    MODIFIED
   },
 } = require('./constants.js');
 
@@ -138,7 +148,12 @@ class FileStatusManager {
     if (targetHasDeletedFiles) {
       Object.keys(this.targetDiffListObj).forEach((filePath) => {
         if (this.targetDiffListObj[filePath] === DELETED) { // TODO lodash filter?
-          const { sourceFilePath, renamedFilePath } = this.getFilePathOptions({ filePath });
+          const {
+            sourceFilePath,
+            renamedFilePath
+          } = this.getFilePathOptions({
+            filePath
+          });
 
           const sourceStatus = get(this.sourceDiffListObj, sourceFilePath, NO_CHANGE).split(',')[0];
 
@@ -175,10 +190,10 @@ class FileStatusManager {
     let [status, pathA, pathB] = diffInfoStr.split('\t');
 
     // add full directory path
-    pathA = `${directoryPath}/${pathA}`;
+    pathA = path.join(directoryPath, pathA);
 
     if (pathB) {
-      pathB = `${directoryPath}/${pathB}`;
+      pathB = path.join(directoryPath, pathB);
     }
 
     return {
@@ -199,20 +214,20 @@ class FileStatusManager {
     if (multimatch(paths, includes.concat(negatedExcludes)).length) {
       const invalidStatus = errorStatuses.some(errorStatus => status === errorStatus);
       const invalidStatusMessage = `INVALID_STATUS: ${status} is an invalid status for paths ${pathA} ${pathB}`;
-      let fileHasBeenModifiedOrAddedByTargetCurators = false;
+      let hasFileModifiedViaCuration = false;
       shouldIncludePath = true;
 
       if (invalidStatus) {
 
-        if((status === ADDED || status === RENAMED) && !this.isSourceFilePath(pathA)) {
+        if ((status === ADDED || status === RENAMED) && !this.isSourceFilePath(pathA)) {
 
-          fileHasBeenModifiedOrAddedByTargetCurators = await this.fileHasBeenModifiedOrAddedByTargetCurators({
+          hasFileModifiedViaCuration = await this.fileModifiedViaCuration({
             since: this.targetRevisionAtLastExport,
             directory: this.targetDirectory,
             filename: this.trimFilePath(pathA)
           });
 
-          if(fileHasBeenModifiedOrAddedByTargetCurators) {
+          if (hasFileModifiedViaCuration) {
             throw invalidStatusMessage
           }
 
@@ -228,21 +243,26 @@ class FileStatusManager {
   }
 
   log(params) {
-    const { options, directory } = params;
+    const {
+      options,
+      directory: cwd
+    } = params;
     let logData = '';
 
     return new Promise((resolve, reject) => {
-      const log = spawn('git', ['log', ...options], { cwd: directory });
+      const log = spawn('git', ['log', ...options], {
+        cwd
+      });
 
       log.stdout.on('data', (data) => {
         logData += String(data);
       });
 
-      process.on('error', (error) => {
-        reject(error);
-      });
+      let errorHandler = error => reject(error);
+      process.once('error', errorHandler);
 
       log.on('exit', () => {
+        process.removeListener('error', errorHandler);
         resolve(logData);
       });
     });
@@ -252,7 +272,7 @@ class FileStatusManager {
   // modified since the `commit` or false if it has not. An optional
   // list of ignoredMaintainers can be provided to ignore commits
   // from those maintainers.
-  async fileHasBeenModifiedOrAddedByTargetCurators({ since, directory, filename, }) {
+  async fileModifiedViaCuration({ since, directory, filename, }) {
     const ignoredMaintainers = this.ignoredMaintainers || [];
     const history = await this.log({
       directory,
@@ -270,10 +290,17 @@ class FileStatusManager {
   async createDiffListObj({ diffList, excludes, includes, directoryPath, errorStatuses, }) {
     const diffListObj = {};
 
-    const diffListArray = diffList.split(/\r?\n/); // split by new line
+    const diffListArray = diffList.split(/\r?\n/).filter(item => item.trim());
 
     for (const diffInfoStr of diffListArray) {
-      const {status, pathA, pathB} = this.getStatusAndPaths({diffInfoStr, directoryPath});
+      const {
+        status,
+        pathA,
+        pathB
+      } = this.getStatusAndPaths({
+        diffInfoStr,
+        directoryPath
+      });
 
       const filterOptions = {
         status,
@@ -320,24 +347,37 @@ class FileStatusManager {
     for (const filePath of Object.keys(this.targetAndSourceDiffListObj)) {
 
       const {
-        baseFilePath, renamedBaseFilePath, sourceFilePath, targetFilePath, renamedFilePath,
-      } = this.getFilePathOptions({ filePath });
+        baseFilePath,
+        renamedBaseFilePath,
+        sourceFilePath,
+        targetFilePath,
+        renamedFilePath,
+      } = this.getFilePathOptions({
+        filePath
+      });
 
-      const { sourceStatus, targetStatus, renameWithPercent } = this.getFileStatus({ targetFilePath, sourceFilePath, });
+      const {
+        sourceStatus,
+        targetStatus,
+        renameWithPercent
+      } = this.getFileStatus({
+        targetFilePath,
+        sourceFilePath,
+      });
 
       if ((targetStatus === NO_CHANGE) && (sourceStatus === NO_CHANGE)) {
         // we can safely ignore these changes since the changes we care about are handled by this.updateMaster
         continue;
       }
 
-      if((targetStatus === ADDED || targetStatus === RENAMED) && (sourceStatus === NO_CHANGE)) {
+      if ((targetStatus === ADDED || targetStatus === RENAMED) && (sourceStatus === NO_CHANGE)) {
         // we can safely ignore this bc we validated that the automation user added these files in a previous step
         continue;
       }
 
-     if((targetStatus === MODIFIED) && (sourceStatus === NO_CHANGE)) {
+      if ((targetStatus === MODIFIED) && (sourceStatus === NO_CHANGE)) {
         // confirm that modifications were from the automation user
-        const fileModifiedByAutomationUser = await this.fileHasBeenModifiedOrAddedByTargetCurators({
+        const fileModifiedByAutomationUser = await this.fileModifiedViaCuration({
           since: this.targetRevisionAtLastExport,
           directory: this.targetDirectory,
           filename: baseFilePath
@@ -346,7 +386,7 @@ class FileStatusManager {
         if (fileModifiedByAutomationUser) {
           continue;
         }
-     }
+      }
 
       const statusScenario = STATUS_SCENARIOS[`${targetStatus}${sourceStatus}`];
 
@@ -359,7 +399,7 @@ class FileStatusManager {
           this.fileOutcomes[statusScenario].files.push(baseFilePath);
         }
       } else {
-        throw new Error(`UNSUPPORTED_SCENARIO: statusScenario is ${statusScenario} for file ${filePath}`);
+        console.log(`UNSUPPORTED_SCENARIO: statusScenario is ${statusScenario} for file ${filePath}`);
       }
     }
     debug('FILE_OUTCOMES: ', this.fileOutcomes);
@@ -368,4 +408,6 @@ class FileStatusManager {
 }
 
 
-module.exports = { FileStatusManager };
+module.exports = {
+  FileStatusManager
+};

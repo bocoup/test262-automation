@@ -1,4 +1,4 @@
-const debug = require('debug')("test262-automation:log");
+const debug = require('debug')('test262-automation:log');
 const fs = require('fs');
 const util = require('util');
 const cpFile = require('cp-file');
@@ -32,13 +32,13 @@ class FileExporter {
     this.sourceDirectory = params.sourceDirectory;
     this.targetDirectory = params.targetDirectory;
     this.exportDateTime = params.exportDateTime;
-    this.fileOutcomes = params.fileOutcomes;
+    this.outcomes = params.outcomes;
   }
 
   async init() {
-    return Object.keys(this.fileOutcomes).reduce(async (promise, outcome) => {
+    return Object.keys(this.outcomes).reduce(async (promise, outcome) => {
       await promise;
-      const files = this.fileOutcomes[outcome].files;
+      const files = this.outcomes[outcome].files;
 
       if (files.length) {
         switch (parseInt(outcome)) {

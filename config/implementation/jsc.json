@@ -12,7 +12,7 @@
   "sourceSubDirectory": "webkit/JSTests",
   "sourceBranch": "master",
   "sourceExcludes": {
-    "foundInFile": [" $vm" ],
+    "foundInFile": ["$vm" ],
     "paths": [ "mozilla/**" , "ChakraCore/**",  "ChangeLog", "*.yaml" , "microbenchmarks/**", "test262/**" ]
   }
 }

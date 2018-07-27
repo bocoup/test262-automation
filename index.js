@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const debug = require('debug')("test262-automation:log");
+const debug = require('debug')('test262-automation:log');
 const fs = require('fs');
 process.setMaxListeners(30); // TODO performance profiling
 
@@ -18,6 +18,11 @@ const gitUtil = new GitUtil({ ...implementationConfig, ...githubConfig });
 try {
   (async () => {
     const data = await gitUtil.init();
+
+    const {
+      targetRootDir,
+      sourceRootDir,
+    } = data;
 
     // diffList A (target Head to Sha)
     const targetDiffList = await gitUtil.diff({
@@ -65,19 +70,21 @@ try {
       targetAndSourceDiff,
     });
 
-
-    const fileOutcomes = await fileStatusManager.init();
-    const foundChangedFiles = Object.keys(fileOutcomes).some(outcome => fileOutcomes[outcome].files.length > 0);
+    const outcomes = await fileStatusManager.init();
+    const foundChangedFiles = Object.keys(outcomes).some(outcome => outcomes[outcome].files.length > 0);
 
     debug('foundChangedFiles', foundChangedFiles);
 
     if (foundChangedFiles) {
+
+      const {curationLogsPath, sourceDirectory, targetDirectory} = data;
+
       const fileExporter = new FileExporter({
-        curationLogsPath: data.curationLogsPath,
-        sourceDirectory: data.sourceDirectory,
-        targetDirectory: data.targetDirectory,
         exportDateTime: new Date(data.timestampForExport),
-        fileOutcomes,
+        curationLogsPath,
+        sourceDirectory,
+        targetDirectory,
+        outcomes,
       });
 
       await fileExporter.init();
@@ -99,7 +106,7 @@ try {
           sourceSha: data.sourceRevisionAtLastExport,
           targetSha: data.targetRevisionAtLastExport,
           implementerName: implementationConfig.implementerDisplayName,
-          outcomes: fileOutcomes,
+          outcomes,
         }).catch(error => console.error('PR ERROR:', error));
       }
     } else {
@@ -114,11 +121,14 @@ function cleanUpScripts({ eventName, tempDirPath }) {
   // kill any running child processes
   process.exit();
   // remove temp dir with cloned repos
-  if(fs.existsSync(tempDirPath)){
+  if (fs.existsSync(tempDirPath)) {
     fs.unlinkSync(tempDirPath);
   }
 
   console.info(`Clean up scripts called on ${eventName} event`);
 }
-process.on('SIGINT', () => cleanUpScripts({ eventName: 'SIGINT',tempDirPath: gitUtil.tempDirPath}));
-process.on('exit', () => cleanUpScripts({ eventName: 'exit',tempDirPath: gitUtil.tempDirPath}));
+
+['SIGINT', 'exit'].forEach(eventName => {
+  const { tempDirPath } = GitUtil;
+  process.on(eventName, () => cleanUpScripts({ eventName, tempDirPath }));
+});
