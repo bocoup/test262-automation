@@ -235,7 +235,7 @@ class GitUtil {
       let errorHandler = error => reject(error);
       process.once('error', errorHandler);
 
-      checkout.on('exit', (code) => {
+      checkout.on('exit', () => {
         console.info(`Checkout out new branch ${branch} in ${process.cwd()}`);
         process.removeListener('error', errorHandler);
         resolve(this);
@@ -291,7 +291,7 @@ class GitUtil {
       let errorHandler = error => reject(error);
       process.once('error', errorHandler);
 
-      log.on('exit', (code) => {
+      log.on('exit', () => {
         process.removeListener('error', errorHandler);
         resolve(logData);
       });

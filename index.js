@@ -31,7 +31,7 @@ try {
         data.targetRevisionAtLastExport,
         'HEAD',
       ],
-      directory: data.targetRootDir,
+      directory: targetRootDir,
     });
 
     // diffList B (source HEAD to Sha)
@@ -41,7 +41,7 @@ try {
         data.sourceRevisionAtLastExport,
         'HEAD',
       ],
-      directory: data.sourceRootDir,
+      directory: sourceRootDir,
     });
 
     // diffList C (source files and target files)
@@ -57,16 +57,16 @@ try {
 
     const fileStatusManager = new FileStatusManager({
       tempDirPath: data.tempDirPath,
-      targetRootDir: data.targetRootDir,
-      sourceRootDir: data.sourceRootDir,
       sourceDirectory: data.sourceDirectory,
       targetDirectory: data.targetDirectory,
       sourceExcludes: data.sourceExcludes,
       ignoredMaintainers: data.ignoredMaintainers,
       targetRevisionAtLastExport: data.targetRevisionAtLastExport,
       curationLogsPath: data.curationLogsPath,
-      targetDiffList,
+      sourceRootDir,
       sourceDiffList,
+      targetRootDir,
+      targetDiffList,
       targetAndSourceDiff,
     });
 
