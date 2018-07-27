@@ -13,6 +13,8 @@ const { getConfigOptions } = require('./utils/cli.js');
 
 const { argv, implementationConfig, githubConfig } = getConfigOptions();
 
+
+
 const gitUtil = new GitUtil({ ...implementationConfig, ...githubConfig });
 
 try {

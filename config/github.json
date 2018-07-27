@@ -3,7 +3,7 @@
   "t262GithubRepoName": "test262",
   "t262BaseBranch": "master",
   "t262GithubUsername": "test262-automation",
-  "t262GitRemote": "git@github.com:bocoup/test262.git",
+  "t262GithubRemote": "git@github.com:bocoup/test262.git",
   "githubAuthorEmail": "test262-automation@bocoup.com",
   "ignoredMaintainers": ["test262-automation", "Github"],
   "githubToken": null,

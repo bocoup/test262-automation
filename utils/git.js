@@ -59,7 +59,7 @@ class GitUtil {
     this.sourceBranch = config.sourceBranch;
 
     this.t262GithubOrg = config.t262GithubOrg;
-    this.t262GitRemote = config.t262GitRemote;
+    this.t262GithubRemote = config.t262GithubRemote;
     this.t262GithubUsername = config.t262GithubUsername;
     this.githubAuthorEmail = config.githubAuthorEmail;
     this.ignoredMaintainers = config.ignoredMaintainers;
@@ -368,13 +368,13 @@ class GitUtil {
       });
     });
   }
-
+// It's not even trying to push to the remote specified by "--t262-github-remote"
   async addRemote() {
-    console.log(`git remote add ${this.t262GithubOrg} ${this.t262GitRemote}`);
-    await execCmd(`git remote add ${this.t262GithubOrg} ${this.t262GitRemote}`, {
+    console.log(`git remote add ${this.t262GithubOrg} ${this.t262GithubRemote}`);
+    await execCmd(`git remote add ${this.t262GithubOrg} ${this.t262GithubRemote}`, {
       cwd: this.targetRootDir
     });
-    console.info(`Added remote of remote... ${this.t262GitRemote} as ${this.t262GithubOrg}`);
+    console.info(`Added remote of remote... ${this.t262GithubRemote} as ${this.t262GithubOrg}`);
   }
 
   async pushRemoteBranch() {
