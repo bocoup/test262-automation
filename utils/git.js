@@ -362,7 +362,7 @@ class GitUtil {
       process.once('error', errorHandler);
 
       commit.on('exit', () => {
-        console.info(`Commited changes with message... "${commitMessage}"`);
+        console.info(`Committed changes with message... "${commitMessage}"`);
         process.removeListener('error', errorHandler);
         resolve();
       });
@@ -370,6 +370,7 @@ class GitUtil {
   }
 
   async addRemote() {
+    console.log(`git remote add ${this.t262GithubOrg} ${this.t262GitRemote}`);
     await execCmd(`git remote add ${this.t262GithubOrg} ${this.t262GitRemote}`, {
       cwd: this.targetRootDir
     });
@@ -377,6 +378,7 @@ class GitUtil {
   }
 
   async pushRemoteBranch() {
+    console.log(`git push ${this.t262GithubOrg} ${this.targetBranch}`);
     await execCmd(`git push ${this.t262GithubOrg} ${this.targetBranch}`, {
       cwd: this.targetRootDir
     });
