@@ -13,6 +13,10 @@
   "sourceBranch": "master",
   "sourceExcludes": {
     "foundInFile": [ "$vm" ],
-    "paths": [ "mozilla/**" , "ChakraCore/**",  "ChangeLog", "*.yaml" , "microbenchmarks/**" , "test262/**"]
+    "paths":[
+      "mozilla/**" , "ChakraCore/**",  "ChangeLog", "*.yaml" , "microbenchmarks/**", "test262/**",
+      "executableAllocationFuzz/**", "heapProfiler/**", "perf/**", "regexp/**",
+      "slowMicrobenchmarks/**", "typeProfiler/**"
+    ]
   }
 }
