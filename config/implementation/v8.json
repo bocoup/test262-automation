@@ -1,0 +1,37 @@
+{
+  "license": "V8",
+  "targetGit": "https://github.com/tc39/test262.git",
+  "targetSubDirectory": "test262/implementation-contributed/v8",
+  "curationLogsPath": "test262/implementation-contributed/curation_logs/v8.json",
+  "implementerName": "v8",
+  "implementerDisplayName": "V8",
+  "pullRequestLabels": [],
+  "pullRequestTitle": "Import test changes from V8",
+  "targetBranch": "master",
+  "sourceGit": "https://github.com/v8/v8.git",
+  "sourceSubDirectory": "v8/test",
+  "sourceBranch": "master",
+  "sourceExcludes": {
+    "foundInFile": [],
+    "paths": [
+      "benchmarks/**",
+      "cctest/**",
+      "common/**",
+      "debugger/**",
+      "fuzzer/**",
+      "inspector/**",
+      "js-perf-test/**",
+      "memory/**",
+      "message/**",
+      "mkgrokdump/**",
+      "mozilla/**",
+      "preparser/**",
+      "torque/**",
+      "unittests/**",
+      "wasm-spec-tests/**",
+      "webkit/**",
+      "BUILD.gn",
+      "mjsunit/wasm/**"
+    ]
+  }
+}
