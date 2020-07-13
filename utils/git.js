@@ -198,7 +198,7 @@ class GitUtil {
 
       // TODO add support for cloning into . dirName
       // TODO add options to support local dev for setting depth
-      const clone = spawn('git', ['clone', '--depth=1000', '--single-branch', `--branch=${branch}`, gitRemote], {
+      const clone = spawn('git', ['clone', '--depth=100', '--single-branch', `--branch=${branch}`, gitRemote], {
         stdio: 'inherit',
         cwd: this.tempDirPath
       });
